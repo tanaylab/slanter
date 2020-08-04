@@ -140,8 +140,8 @@ Gives us:
 TODO
 ....
 
-    A better approach might be to compute the clustering tree first (which should give us an
-    "optimal" result), and then compute the best reordering of the entries which brings the high
-    values closest to the diagonal, while preserving the tree; that is, looking at each tree node,
-    deciding on the best order to present its two sub-trees. In theory this should give us both the
-    most optimal clustering and also great visualization.
+A better approach might be to compute the clustering tree first (which should give us an "optimal"
+result), and then compute the best reordering of the entries which brings the high values closest to
+the diagonal, while preserving the tree; that is, looking at each tree node, deciding on the best
+order to present its two sub-trees. In theory this should give us both the most optimal clustering
+and also great visualization.
