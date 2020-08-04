@@ -15,6 +15,11 @@ You can also use the lower-level ``slanted_order`` and ``slanted_reorder`` funct
 visualization order for your data, and ``oclust`` to perform order-preserving clustering. See below
 for more details.
 
+TODO
+....
+
+Convert this to a proper R package.
+
 The Problem
 -----------
 
@@ -132,15 +137,11 @@ Gives us:
 
 .. image:: clustered_sheatmap.png
 
-.. todo::
+TODO
+....
 
     A better approach might be to compute the clustering tree first (which should give us an
     "optimal" result), and then compute the best reordering of the entries which brings the high
     values closest to the diagonal, while preserving the tree; that is, looking at each tree node,
     deciding on the best order to present its two sub-trees. In theory this should give us both the
     most optimal clustering and also great visualization.
-
-TODO
-....
-
-Convert this to a proper R package.
