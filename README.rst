@@ -46,8 +46,8 @@ Gives us:
 
 .. image:: large_clustered_pheatmap.png
 
-At a first glance, this seems to indicate there are two very sharply defined sub-groups, with some
-noise. A closer look shows a different picture.
+At a first glance, this seems to indicate there are two very sharply defined sub-groups, with a less
+sharply defined sub-group. A closer look (below) will reveal a different picture.
 
 Slanted Matrices
 ----------------
@@ -74,7 +74,7 @@ with ignoring the clustering, writing:
 
     sheatmap(data, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_cols=F)
 
-Gives us:
+Which gives us:
 
 .. image:: large_unclustered_sheatmap.png
 
@@ -99,7 +99,6 @@ Slanted Clustering
 What if we still want to see the cluster structure of our data? The ``sheatmap``
 function provides three options to do this, with different trade-offs.
 
-
 Reordering
 ..........
 
@@ -115,6 +114,11 @@ slanted order. For example, writing:
 Gives us:
 
 .. image:: large_reordered_sheatmap.png
+
+Here the clustering tree can make the claim it is "optimal" in some sense - it is identical to the
+original ``pheatmap`` clustering tree. The order is the best we can have under this constraint, so
+we do not get the full benefits of slanting, but we get at least a hint that there is a smooth
+gradient between the groups rather than a sharp divide.
 
 Modifying
 .........
