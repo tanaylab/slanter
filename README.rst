@@ -4,73 +4,58 @@ Slant.R
 Installation and Usage
 ----------------------
 
-Download `slant.r`. Inside R, `source('slant.r')`.
+Download ``slant.r``. Inside R, ``source('slant.r')``.
 
-Use ``sheatmap`` as a drop-in replacement to ``pheatmap``. Note that unlike ``pheatmap``, by default
-``sheatmap`` does not cluster the rows and the columns, and that ``sheatmap`` provides some
-additional flags to control slanting. Otherwise, you can pass any argument to ``sheatmap`` and it
-will be forwarded to ``pheatmap``, so you can control all the diagram details in the usual way.
+Use ``sheatmap`` as a drop-in replacement to ``pheatmap``. In general, any argument to ``sheatmap``
+(except ``clustering_callback``) is forwarded to ``pheatmap``, so all the diagram aspects can be
+controlled in the usual way.
 
-You can also use the lower-level ``slanted_order`` and ``slanted_reorder`` functions to just get the
-visualization order for your data, and ``oclust`` to perform order-preserving clustering. See below
-for more details.
-
-TODO
-....
-
-Convert this to a proper R package.
+Lower-level functions are also available; see the `code documentation <slant.r>`_ for details.
 
 The Problem
------------
+===========
 
 Given a matrix of some similarity data (that is, where data[i,j] is higher if the entity represented
 by row i is "more similar" to the entity represented by column j), how best to visualize it?
-
-Slanted Matrices
-----------------
 
 The default R solution is to use ``pheatmap``. This has the advantage it also reorders the data so
 that most-similar rows (or columns) are near each other. This is very useful for visualizing the
 clustering of the entries into some groups.
 
 However, while the resulting clustering is "optimal" (for some clustering algorithm), the resulting
-visualization is not necessarily the best one. Intuitively, humans prefer to see the data ordered
-such that the highest-similarity values fall along a diagonal (traditionally, from the top-left to
-the bottom-right of the diagram). That is, order both the rows and the columns, such that the most
-similar rows of the first few columns are the first few rows, and so on until the most similar rows
-of the last few columns are the last few rows.
+visualization is not necessarily the best one. Intuitively, all ``pheatmap`` cares about (if
+anything) is the clustering tree, but not its order. In one dimensions, consider clustering the
+numbers 1 through 4. The ``pheatmap`` is as happy with the tree ``(4,3), (1,2)`` as it is with the
+more legible tree ``(1,2), (3,4)``. In two dimensions, this results in illegible, and at times
+downright misleading, heatmaps.
 
-It is best to demonstrate this with an example. Using the sample ``data.Rda`` contained here,
-writing:
+It is best to demonstrate this with an example. All the example code below assumes we first:
 
 .. code:: r
 
     read('data.Rda')
+    source('slant.r')
+
+Then, writing:
+
+.. code:: r
+
     pheatmap::pheatmap(data, show_rownames=F, show_colnames=F)
 
 Gives us:
 
-.. image:: clustered_pheatmap.png
+.. image:: large_clustered_pheatmap.png
 
-While writing:
+At a first glance, this seems to indicate there are two very sharply defined sub-groups, with some
+noise. A closer look shows a different picture.
 
-.. code:: r
+Slanted Matrices
+----------------
 
-    source('slant.r')
-    sheatmap(data, show_rownames=F, show_colnames=F)
-
-Gives us:
-
-.. image:: unclustered_sheatmap.png
-
-This is the same data!
-
-The Method
-..........
-
-The ``sheatmap`` function invoked the ``slanted_orders`` function to compute the best
-order of rows and columns, such that the highest data values will be the closest to
-the matrix diagonal.
+A "slanted matrix" is a matrix which is reordered such that its highest values are as close to the
+diagonal as possible. In this package, this is implemented by the ``slanted_orders`` function, which
+repeatedly sorts the rows by the index of their "diagonal" column, and then the columns by the index
+of their "diagonal" rows, until the system stabilizes (this is pretty fast).
 
 .. note::
 
@@ -82,17 +67,111 @@ the matrix diagonal.
       indicator as +1 (perfect correlation). If your data isn't like that, just make sure it is all
       non-negative, where larger values are "more similar".
 
+The ``sheatmap`` function wraps this (with additional functionality described below). We'll begin
+with ignoring the clustering, writing:
+
+.. code:: r
+
+    sheatmap(data, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_cols=F)
+
+Gives us:
+
+.. image:: large_unclustered_sheatmap.png
+
+**This is exactly the same data as before.**
+
+Note that if we do not perform any clustering, ``pheatmap`` will preserve the original data order.
+Sometimes this is exactly what you want, but when the data has no a-priori order, writing:
+
+.. code:: r
+
+    pheatmap::pheatmap(data, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_cols=F)
+
+Gives us:
+
+.. image:: large_unclustered_pheatmap.png
+
+Which most definitely is *not* what we want to see.
+
+Slanted Clustering
+------------------
+
+What if we still want to see the cluster structure of our data? The ``sheatmap``
+function provides three options to do this, with different trade-offs.
+
+
+Reordering
+..........
+
+By default (or if you specify ``clusters='reorder'``), if clustering is done,
+then ``sheatmap`` will preserve it. However, it will use the fact that clustering
+does not specify (total) order, to reorder the clustering tree to best fit the
+slanted order. For example, writing:
+
+.. code:: r
+
+    sheatmap(data, show_rownames=F, show_colnames=F)
+
+Gives us:
+
+.. image:: large_reordered_sheatmap.png
+
+Modifying
+.........
+
+A stronger option is to allow ``sheatmap`` to modify the clustering tree. By specifying
+``clusters='modify'``, it maintains the "ideal" slanted order, and generate a compatible clustering
+tree which is the "closest possible" to the original unconstrained clustering. For example, writing:
+
+.. code:: r
+
+    sheatmap(data, show_rownames=F, show_colnames=F, clusters='modify')
+
+Will give us:
+
+.. image:: large_modified_sheatmap.png
+
+We can see that while in theory the approach seems promising, in practice it tends to generate
+low-quality clustering trees. However, YMMV.
+
+Replacing
+.........
+
+Finally, ``sheatmap`` allows to simply build a brand-new clustering tree, tailored to the
+"ideal" slanted order. By specifying ``clusters='replace'``, the code will discard the
+original clustering (if any), and will invoke ``oclust`` (see below) to get a new one.
+For example, writing:
+
+.. code:: r
+
+    sheatmap(data, show_rownames=F, show_colnames=F, clusters='replace')
+
+Will give us:
+
+.. image:: large_replaced_sheatmap.png
+
+Here we see not only the clear gradient, but also that it splits naturally to four parts
+(that smoothly transition from one to the next). We can highlight this by using ``cutree``:
+
+.. code:: r
+
+    sheatmap(data, show_rownames=F, show_colnames=F, clusters='replace', cutree_rows=4, cutree_cols=4)
+
+Which gives us:
+
+.. image:: large_cut_replaced_sheatmap.png
+
+Which is pretty good, even though it doesn't have the claim of "optimality" that the original
+unrestricted clustering offers.
+
 Ordered Clustering
 ------------------
 
-Unlike ``pheatmap``, by default ``sheatmap`` does not cluster the rows and columns. However, such
-clustering is useful. Currently, this is achieved by doing order-preserving clustering of the data.
-
 In general hierarchical clustering of entities (rows or columns in our case) tries to create a
 binary tree such that the more similar two entities are, the closer they are in the tree. The twist
-in ordered clustering is that the entities are ordered E = { e\ :sub:\ 1, ... e\ :sub:\ N } and each
-group of entities clustered under any tree node must be a contiguous range of entities G = { e\
-:sub:\ start, ..., e\ :sub:\ stop }.
+in ordered clustering (as implemented by ``oclust``) is that the entities are ordered E = { e_1, ...
+e_N } and each group of entities clustered under any tree node must be a contiguous range of
+entities G = { e_start, ..., e_stop }.
 
 Visually this means that if you draw the tree on top of the ordered entities, there would be no edge
 crossings. This makes ordered clustering a natural addition to the slanted matrix visualization.
@@ -102,46 +181,25 @@ entities for the slanted matrix visualization, and then find a compatible cluste
 it.
 
 To find a good clustering tree, we first define the similarity between groups of entities (non-leaf
-nodes). Say we have two groups A = { a\ :sub:\ 1, ... a\ :sub:\ n } and B = { b\ :sub:\ 1, ... b\
-:sub:\ m }, we can define the similarity between A and B to be some function of all the similarity
-measures between all the pairs (a\ :sub:\ i, b\ :sub:\ j). Three such aggregation functions are
-provided: mean, min and max.
+nodes). Say we have two groups A = { a_1, ... a_n } and B = { b_1, ... b_m }, we can define the
+similarity between A and B to be some function of all the similarity measures between all the pairs
+(a_i, b_j). We are using the average of all the measures as this seems to give the best results.
 
-Given the ability to measure the similarity between groups of entities, we can use a heuristic to
-find a good clustering tree. The ordering constraint severely restricts the possible clustering
-trees, making these heuristics efficient with complexity of only O(n^2 log n). Two such heuristics
-are provided:
+Given the ability to measure the similarity between groups of entities, we use a heuristic to find a
+good clustering tree. The ordering constraint severely restricts the possible clustering trees,
+making this efficient with complexity of only O(n^2 log n).
 
-The agglomerative heuristics works bottom-up. It starts with each entity as a separate group (leaf
+Specifically, this heuristic works bottom-up. It starts with each entity as a separate group (leaf
 tree nodes). At each step, it looks for the most similar pair of adjacent groups, and groups them
 together (adds a parent node above these two nodes). This is repeated until we end up with a single
 group (the root of the tree).
 
-The divisive heuristic works top-down. It starts with the group of all entities (the root of the
-tree). At each step, for some group containing more than one entity (non-leaf node), we look for the
-best point to split it into two contiguous adjacent sub-groups (sub-nodes), such that these two
-sub-groups are the least similar to each other. This is repeated until we only have groups of size 1
-(leaf nodes).
-
-By default, the algorithm uses the mean aggregation function combined with the agglomerative
-heuristic, which seems to provide good results for a wide range of data sets.
-
-For example, writing:
-
-.. code:: r
-
-    source('slant.r')
-    sheatmap(data, show_rownames=F, show_colnames=F, cluster_cols=T, cluster_rows=T)
-
-Gives us:
-
-.. image:: clustered_sheatmap.png
-
 TODO
-....
+====
 
-A better approach might be to compute the clustering tree first (which should give us an "optimal"
-result), and then compute the best reordering of the entries which brings the high values closest to
-the diagonal, while preserving the tree; that is, looking at each tree node, deciding on the best
-order to present its two sub-trees. In theory this should give us both the most optimal clustering
-and also great visualization.
+Convert this to a proper R package.
+
+LICENSE (MIT)
+=============
+
+This code is available under the `MIT license <LICENSE.rst>`_.
