@@ -4,11 +4,11 @@ Slant.R
 Installation and Usage
 ----------------------
 
-Download ``slant.r``. Inside R, ``source('slant.r')``.
+Download `slant.r <slant.r>`_. Then, ``source('slant.r')``, and use ``sheatmap`` a drop-in
+replacement to ``pheatmap``.
 
-Use ``sheatmap`` as a drop-in replacement to ``pheatmap``. In general, any argument to ``sheatmap``
-(except ``clustering_callback``) is forwarded to ``pheatmap``, so all the diagram aspects can be
-controlled in the usual way.
+In general, any argument to ``sheatmap`` (except ``clustering_callback``) is forwarded to
+``pheatmap``, so all the diagram aspects can be controlled in the usual way.
 
 .. note::
 
