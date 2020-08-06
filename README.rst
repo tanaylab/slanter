@@ -15,60 +15,79 @@ Lower-level functions are also available; see the `code documentation <slant.r>`
 The Problem
 ===========
 
-Given a matrix of some similarity data (that is, where data[i,j] is higher if the entity represented
-by row i is "more similar" to the entity represented by column j), how best to visualize it?
-
-The default R solution is to use ``pheatmap``. This has the advantage it also reorders the data so
-that most-similar rows (or columns) are near each other. This is very useful for visualizing the
-clustering of the entries into some groups.
-
-However, while the resulting clustering is "optimal" (for some clustering algorithm), the resulting
-visualization is not necessarily the best one. Intuitively, all ``pheatmap`` cares about (if
-anything) is the clustering tree, but not its order. In one dimensions, consider clustering the
-numbers 1 through 4. The ``pheatmap`` is as happy with the tree ``(4,3), (1,2)`` as it is with the
-more legible tree ``(1,2), (3,4)``. In two dimensions, this results in illegible, and at times
-downright misleading, heatmaps.
-
-It is best to demonstrate this with an example. All the example code below assumes we first:
+Suppose you have some data that compares some elements. Often this compares all the pairs of
+elements in a set, but sometimes pairs of elements from different sets. In the concrete example used
+below, each element is a batch of ~1000 cells, which we have the combined RNA sequencing data for.
+To load this data (and the ``slant`` functions), write:
 
 .. code:: r
 
     read('data.Rda')
     source('slant.r')
 
-Then, writing:
+We want to visualize and understand the similarities between these elements - in the example's case,
+we know that the batches are sampled at different times during a fast development process, and are
+interested in estimating how far along this process each batch is.
+
+Naively, we can compute a matrix of similarities between the batches, by correlating their RNA
+profiles. Technically, each element of this matrix tells us, for a specific pair of batches, how
+similar they are to each other.
+
+The next step would be to visualize this data. R helpfully gives us the ``pheatmap`` function, which
+will (by default) also cluster the data such that similar batches would be placed near each other.
+That is, in theory, we would not only get a nice visualization, but we can hope to use this to
+obtain some meaningful order of the batches, which might map to a position along the development
+process we want to analyze.
+
+So, we write:
 
 .. code:: r
 
     pheatmap::pheatmap(data, show_rownames=F, show_colnames=F)
 
-Gives us:
+Which gives us:
 
 .. image:: large_clustered_pheatmap.png
 
 At a first glance, this seems to indicate there are two very sharply distinguished sub-groups, with
-a third mixed group. A closer look (below) will reveal a different picture.
+a third mixed group. We know the batches were sampled from a continuous process, and biological
+processes are never like this. We definitely can't use this to estimate the position of each batch
+along some development process.
+
+Perhaps the problem is with the clustering? We could invoke ``pheatmap`` without any clustering at
+all. This would preserve the data's order; if we had an a-priori order, this would be exactly what
+we'd need to do to visualize the data. However, in our case, there is no such a-priori order - it is
+exactly that which we are trying to extract from the data. Therefore, if we write:
+
+.. code:: r
+
+    pheatmap::pheatmap(data, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_cols=F)
+
+We will get:
+
+.. image:: large_unclustered_pheatmap.png
+
+Which most definitely is *not* what we want to see.
+
+So, what went wrong? It turns out, our the data is fine. The problem is with the method we used to
+visualize/analyze it.
+
+Consider a clustering algorithm given the numbers 1, 2, 3, 4. We expect it to group the two low
+values together, then the two high values, and combine them to a final ``( (1, 2), (3, 4) )`` tree.
+In practice, however, such algorithms don't care about the internal order within each node. That is,
+the algorithm would be just as happy giving you the tree ``( (4, 3), (1, 2) )`` which is technically
+correct (but not the best kind of correct).
+
+Amplify this problem to hundreds, or thousands, of elements, and it is obvious in retrospect that we
+can't expect ``hclust`` (and therefore ``pheatmap``) to solve our problem. Enter "slanted matrices"
+to the rescue.
 
 Slanted Matrices
 ----------------
 
-A "slanted matrix" is a matrix which is reordered such that its highest values are as close to the
-diagonal as possible. In this package, this is implemented by the ``slanted_orders`` function, which
-repeatedly sorts the rows by the index of their "diagonal" column, and then the columns by the index
-of their "diagonal" rows, until the system stabilizes (this is pretty fast).
-
-.. note::
-
-    * This works for any size similarity matrix, not necessarily the square symmetric matrix one
-      gets from computing correlations.
-
-    * The code actually works on the square of the data. This works OK-ish if the similarity data
-      is a correlation and one takes -1 (perfect negative correlation) to be as strong a similarity
-      indicator as +1 (perfect correlation). If your data isn't like that, just make sure it is all
-      non-negative, where larger values are "more similar".
-
-The ``sheatmap`` function wraps this (with additional functionality described below). We'll begin
-with ignoring the clustering, writing:
+Technically, a "slanted matrix" is a matrix which is reordered such that its highest values are as
+close to the diagonal as possible. This, in theory, should give us a clearer indication of the
+overall structure of the data. We therefore write:
 
 .. code:: r
 
@@ -80,71 +99,63 @@ Which gives us:
 
 **This is exactly the same data as before.**
 
-Note that if we do not perform any clustering, ``pheatmap`` will preserve the original data order.
-Sometimes this is exactly what you want, but when the data has no a-priori order, writing:
+In this package, this is implemented by the ``slanted_orders`` function, which repeatedly sorts the
+rows by the index of their "diagonal" column, and then the columns by the index of their "diagonal"
+rows, until the system stabilizes (this is pretty fast).
 
-.. code:: r
+.. note::
 
-    pheatmap::pheatmap(data, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_cols=F)
+    * This works for any size similarity matrix, not necessarily the square symmetric matrix one
+      gets from computing correlations.
 
-Gives us:
+    * The code actually works on the square of the data. This works OK-ish if the similarity data
+      is a correlation and one takes -1 (perfect negative correlation) to be as strong a similarity
+      indicator as +1 (perfect correlation). If your data isn't like that, just make sure it is all
+      non-negative, where larger values are "more similar".
 
-.. image:: large_unclustered_pheatmap.png
-
-Which most definitely is *not* what we want to see.
+The ``sheatmap`` function wraps all this (with additional functionality described below), similarly
+to how ``pheatmap`` wraps the unordered ``hclust`` functionality.
 
 Slanted Clustering
 ------------------
 
 What if we still want to see the cluster structure of our data? The ``sheatmap``
-function provides three options to do this, with different trade-offs.
+function provides two options to do this, with different trade-offs.
 
-Reordering
-..........
+Reordered CLustering
+....................
 
-By default (or if you specify ``clusters='reorder'``), if clustering is done,
-then ``sheatmap`` will preserve it. However, it will use the fact that clustering
-does not specify (total) order, to reorder the clustering tree to best fit the
-slanted order. For example, writing:
+If you have an a-priori clustering of the data, you can pass it to ``sheatmap`` (in the same way as
+you pass it to ``pheatmap``, e.g. ``cluster_rows=hclust(...)``). In this case, ``sheatmap`` will
+preserve the clustering, but at each node will pick the best order of the two sub-trees so that the
+end result will be the "best" slanted order.
+
+So, hoping that ``hclust`` gives the "optimal" results, and that the only problem is reordering
+the batches, we write:
 
 .. code:: r
 
-    sheatmap(data, show_rownames=F, show_colnames=F)
+    clusters <- hclust(data, method='ward.D2')
+    sheatmap(data, show_rownames=F, show_colnames=F, cluster_rows=clusters, cluster_cols=clusters)
 
-Gives us:
+And get:
 
 .. image:: large_reordered_sheatmap.png
 
-Here the clustering tree can make the claim it is "optimal" in some sense - it is identical to the
-original ``pheatmap`` clustering tree. The order is the best we can have under this constraint, so
-we do not get the full benefits of slanting, but we get at least a hint that there is a smooth
-gradient between the groups rather than a sharp divide.
+Better! But not a great result. We see a hint that there's a smooth transition between two states,
+but the data is still too blocky to be able to represent a continuous biological process. Still,
+this approach might be the best if one wants to visualize a given clustering in the best possible
+way.
 
-Modifying
-.........
+Ordered Clustering
+..................
 
-A stronger option is to allow ``sheatmap`` to modify the clustering tree. By specifying
-``clusters='modify'``, it maintains the "ideal" slanted order, and generate a compatible clustering
-tree which is the "closest possible" to the original unconstrained clustering. For example, writing:
+Since we don't have an a-priori clustering which we have strong evidence for, we can ask
+``sheatmap`` to generate a clustering for us (in the same way as for ``pheatmap``, e.g.
+``cluster_rows=T``).
 
-.. code:: r
-
-    sheatmap(data, show_rownames=F, show_colnames=F, clusters='modify')
-
-Will give us:
-
-.. image:: large_modified_sheatmap.png
-
-We can see that while in theory the approach seems promising, in practice it tends to generate
-low-quality clustering trees. However, YMMV.
-
-Replacing
-.........
-
-Finally, ``sheatmap`` allows to simply build a brand-new clustering tree, tailored to the
-"ideal" slanted order. By specifying ``clusters='replace'``, the code will discard the
-original clustering (if any), and will invoke ``oclust`` (see below) to get a new one.
-For example, writing:
+In this (default) case, ``sheatmap`` will generate a clustering tree which is constrained to be
+compatible with the "ideal" slanted order. That is, writing:
 
 .. code:: r
 
@@ -154,8 +165,9 @@ Will give us:
 
 .. image:: large_replaced_sheatmap.png
 
-Here we see not only the clear gradient, but also that it splits naturally to four parts
-(that smoothly transition from one to the next). We can highlight this by using ``cutree``:
+Much better! Here we only the see the clear gradient as before, but also that it splits naturally to
+four phases (that smoothly transition from one to the next). We can highlight this by using
+``cutree``:
 
 .. code:: r
 
@@ -165,37 +177,35 @@ Which gives us:
 
 .. image:: large_cut_replaced_sheatmap.png
 
-Which is pretty good, even though it doesn't have the claim of "full optimality" that the original
-unrestricted clustering offers; instead it only promises "constrained optimality" of the clustering
-(subject to the slanting order).
+The oclust function
+...................
 
-Ordered Clustering
-------------------
+In general hierarchical clustering of elements (rows or columns in our case) tries to create a
+binary tree such that the more similar two elements are, the closer they are in the tree. The twist
+in ordered clustering (as implemented by ``oclust``) is that the elements are ordered, and each
+group of elements clustered under any tree node must be a contiguous range of such elements.
 
-In general hierarchical clustering of entities (rows or columns in our case) tries to create a
-binary tree such that the more similar two entities are, the closer they are in the tree. The twist
-in ordered clustering (as implemented by ``oclust``) is that the entities are ordered E = { e_1, ...
-e_N } and each group of entities clustered under any tree node must be a contiguous range of
-entities G = { e_start, ..., e_stop }.
+Visually this means that if you draw the final clustering tree on top of the ordered elements, there
+would be no edge crossings. This makes ordered clustering a natural addition to the slanted matrix
+visualization.
 
-Visually this means that if you draw the tree on top of the ordered entities, there would be no edge
-crossings. This makes ordered clustering a natural addition to the slanted matrix visualization.
-Normally, an unconstrained hierarchical clustering is done first, and the matrix visualization order
-is chosen to be compatible with the clustering tree. Here we do the opposite - we first order the
-entities for the slanted matrix visualization, and then find a compatible clustering tree to go with
-it.
+That is, normally (as in ``pheatmap``), an unconstrained hierarchical clustering is done first, and
+the matrix visualization order is chosen to be compatible with the clustering tree. Here (in
+``sheatmap`` using ``oclust``), we do the opposite - we first order the elements for the slanted
+matrix visualization, and then find a compatible clustering tree to go with it.
 
 In principle it is possible to adapt any clustering method to include an ordering constraint. We
-chose to adapt `Ward's method <https://en.wikipedia.org/wiki/Ward%27s_method>`_. In this method, the
-algorithm starts with each element on its own, and merges the two elements such that the total
-variance within the merge node is minimized. It recursively merges groups of elements (minimizing
-the variance each time) until obtaining the full clustering tree.
+chose to adapt `Ward's method <https://en.wikipedia.org/wiki/Ward%27s_method>`_ (both ``ward.D`` and
+the default ``ward.D2`` are supported). In this method, the algorithm starts with each element on
+its own, and merges the two elements such that the total variance within the merged node is
+minimized. It recursively merges groups of elements (minimizing the variance each time) until
+obtaining the full clustering tree.
 
-The general Ward's method can pick any two element groups to combine at each step. The ordered
-``oclust`` variant is restricted to only choosing adjacent element groups, trusting the slanting
-order to make similar elements adjacent to each other. This has the secondary effect that it is very
-fast, which allowing for a practical pure R implementation. The full Ward's method is slower, so the
-R implementation resorts to using FORTRAN code.
+The general Ward's method can pick any two element groups to combine at each step. In contrast, the
+ordered ``oclust`` variant can only choose adjacent element groups, trusting the slanting order to
+have placed similar elements adjacent to each other. This makes the algorithm much faster, which
+allows for a practical pure R implementation. The full Ward's method is slower, so requires a
+FORTRAN implementation.
 
 TODO
 ====

@@ -191,31 +191,22 @@ accelerated_cor <- function(data, ..., method='pearson') {
 #' different) sets of entities, this will reorder it to move the high values
 #' close to the diagonal, for better visualizations.
 #'
-#' If clustering is a concern, there are two basic strategies you can use:
+#' If you want to cluster your data, you have two options:
 #'
-#' If the clustering is more important, then \code{sheatmap} will pick the best
-#' order that is compatible with it. This would look less nice, but the
-#' clusters will remain unchanged. This is the default, specified as
-#' \code{clusters='reorder'}.
+#' If you do not specify a clustering, and just request one (e.g.,
+#' ``cluster_rows=T``), then \code{sheatmap} will invoke \code{oclust} to
+#' generate the "best" clustering that is also compatible with the slanted order.
+#' This is the default.
 #'
-#' Otherwise, if the visualization is more important, then \code{sheatmap} will
-#' pick the best order, and generate a clustering that is compatible with it,
-#' and as close as possible to the original clustering. This would look better,
-#' but the clustering would be modified. Specify \code{clusters='modify'} to
-#' enable this.
+#' Otherwise, \code{sheatmap} will obey any clustering it was given (e.g.,
+#' ``cluster_rows=hclust(...)``. Note that any given #' clustering tree allows
+#' for multiple orders, since in each node, the two sub-trees can be flipped,
+#' without modifying the tree. Thus, \code{sheatmap} will use the
+#' "best" order that is compatible with the given clustering.
 #'
-#' If you want to just give up on the original clustering and try to generate
-#' a brand new one that best matches the reordered data, specify
-#' \code{clusters='replace'}. This uses the \code{oclust} greedy bottom-up
-#' algorithm to create a hierarchical clustering which preserves the slanted
-#' order and tries to minimize the average distance between the sibling
-#' sub-trees at each node. YMMV.
-#'
-#' In general, you can give this function any of the \code{pheatmap} flags,
+#' In addition, you can give this function any of the \code{pheatmap} flags,
 #' and it will just pass them on. This allows full control over the diagram's
 #' features.
-#'
-#' There are however a few additional and tweaked flags, as follows:
 #'
 #' @param data A rectangular matrix
 #' @param annotation_row Optional data frame describing each row.
@@ -225,10 +216,9 @@ accelerated_cor <- function(data, ..., method='pearson') {
 #' @param same_order Whether to apply the same order to both rows and columns.
 #' @param cluster_rows Whether to cluster the rows, or the clustering to use.
 #' @param cluster_cols Whether to cluster the columns, or the clustering to use.
-#' @param clusters What to do with the original clusters: \code
 #' @param clustering_distance_cols The default method for computing column distances (by default, \code{euclidian}).
 #' @param clustering_distance_rows The default method for computing row distances (by default, \code{euclidian}).
-#' @param clustering_method The default method to use for clustering (by default, \code{complete}).
+#' @param clustering_method The default method to use for clustering (by default, \code{ward.D2}).
 #' @param clustering_callback Is not supported.
 #' @param ... Additional flags to pass to \code{pheatmap}.
 #' @return Whatever \code{pheatmap} returns.
@@ -242,64 +232,37 @@ sheatmap <- function(data, ...,
                      same_order=F,
                      cluster_rows=T,
                      cluster_cols=T,
-                     clusters='reorder',
                      clustering_distance_rows='euclidian',
                      clustering_distance_cols='euclidian',
-                     clustering_method='complete',
+                     clustering_method='ward.D2',
                      clustering_callback=NA) {
     stopifnot(is.na(clustering_callback))  # Not implemented.
-    stopifnot(clusters %in% c('reorder', 'modify', 'replace'))
-
-    rows_distances <- NULL
-    if (class(cluster_rows) != 'hclust' && cluster_rows) {
-        rows_distances <- dist(data, method=clustering_distance_rows)
-        cluster_rows <- hclust(rows_distances, method=clustering_method)
-    }
-
-    if (class(cluster_cols) != 'hclust' && cluster_cols) {
-        cols_distances <- dist(data, method=clustering_distance_cols)
-        cluster_cols <- hclust(cols_distances, method=clustering_method)
-    }
 
     ideal_orders <-
         slanted_orders(data, order_rows=order_rows, order_cols=order_cols, same_order=same_order)
 
-    if (class(cluster_rows) != 'hclust') {
-        rows_order <- ideal_orders$rows
-    } else if (clusters == 'replace') {
-        if (is.null(rows_distances)) {
-            rows_distances <- dist(data, method=clustering_distance_rows)
-        }
-        cluster_rows <- oclust(rows_distances, order=ideal_orders$rows, method='ward.D2')
-        rows_order = ideal_orders$row
-    } else {
-        if (clusters == 'modify') {
-            cluster_rows <- best_modified_hclust(cluster_rows, ideal_orders$rows)
-        } else {
-            stopifnot(clusters == 'reorder')
-            cluster_rows <- best_reordered_hclust(cluster_rows, ideal_orders$rows)
-        }
+    if (class(cluster_rows) == 'hclust') {
+        cluster_rows <- best_reordered_hclust(cluster_rows, ideal_orders$rows)
         rows_order <- cluster_rows$order
         cluster_rows <- pre_ordered_hclust(cluster_rows)
+    } else if (cluster_rows) {
+        rows_distances <- dist(data, method=clustering_distance_rows)
+        rows_order = ideal_orders$row
+        cluster_rows <- oclust(rows_distances, order=rows_order, method=clustering_method)
+    } else {
+        rows_order <- 1:dim(data)[1]
     }
 
-    if (class(cluster_cols) != 'hclust') {
-        cols_order <- ideal_orders$cols
-    } else if (clusters == 'replace') {
-        if (is.null(cols_distances)) {
-            cols_distances <- dist(data, method=clustering_distance_cols)
-        }
-        cluster_cols <- oclust(cols_distances, order=ideal_orders$cols, method='ward.D2')
-        cols_order = ideal_orders$col
-    } else {
-        if (clusters == 'modify') {
-            cluster_cols <- best_modified_hclust(cluster_cols, ideal_orders$cols)
-        } else {
-            stopifnot(clusters == 'reorder')
-            cluster_cols <- best_reordered_hclust(cluster_cols, ideal_orders$cols)
-        }
+    if (class(cluster_cols) == 'hclust') {
+        cluster_cols <- best_reordered_hclust(cluster_cols, ideal_orders$cols)
         cols_order <- cluster_cols$order
         cluster_cols <- pre_ordered_hclust(cluster_cols)
+    } else if (cluster_cols) {
+        cols_distances <- dist(data, method=clustering_distance_cols)
+        cols_order = ideal_orders$col
+        cluster_cols <- oclust(cols_distances, order=cols_order, method=clustering_method)
+    } else {
+        cols_order <- 1:dim(data)[2]
     }
 
     data <- data[rows_order, cols_order]
@@ -337,121 +300,6 @@ reorder_frame <- function(data, order) {
     return (data)
 }
 
-#' Given a clustering of some data, and some "ideal" order we'd like to use
-#' to visualize it, return a modified clustering that is compatible with
-#' this order, and is as close as possible to the original clustering.
-#'
-#' @param cluster_rows The existing clustering of the data.
-#' @param ideal_order The order we'd like to see the data in.
-#' @return A modified clustering which obeys the ideal order.
-#'
-#' @export
-best_modified_hclust <- function(clusters, order) {
-    old_of_new <- order
-    merge_of_old <- clusters$merge
-    new_of_old <- Matrix::invPerm(old_of_new)
-    merges_count <- dim(merge_of_old)[1]
-    merge_of_new <- array(0, c(merges_count, 2))
-    height_of_new <- array(0, merges_count)
-
-    indices_count <- merges_count + 1
-
-    pending_merges <- list()
-    for (new_index in 1:indices_count) {
-        old_index <- old_of_new[new_index]
-        pending_merges[[new_index]] <-
-            list(index=-old_index, new_indices=c(new_index), height=1,
-                 outside_count=0, merge_outside_count=indices_count)
-    }
-
-    for (new_index in 1:(indices_count - 1)) {
-        new_indices <- c(new_index, new_index + 1)
-        pending_merges[[new_index]]$merge_outside_count <-
-            merge_outside_of_subset(merge_of_old, new_of_old, new_indices)
-    }
-
-    find_best_pending_index <- function() {
-        if (length(pending_merges) == 2) {
-            return (1)
-        }
-
-        penalty_of_pending_index <- function(pending_index) {
-            left_pending_merge <- pending_merges[[pending_index]]
-            right_pending_merge <- pending_merges[[pending_index + 1]]
-
-            base_outside_count <-
-                left_pending_merge$outside_count + right_pending_merge$outside_count
-            delta_outside_count <- left_pending_merge$merge_outside_count - base_outside_count
-
-            left_inside_count <- length(left_pending_merge$new_indices)
-            right_inside_count <- length(right_pending_merge$new_indices)
-            delta_inside_count <- abs(left_inside_count - right_inside_count)
-
-            return (delta_outside_count + delta_inside_count)
-        }
-
-        best_pending_index <- 1
-        best_pending_penalty <- penalty_of_pending_index(1)
-
-        for (pending_index in 2:(length(pending_merges) - 1)) {
-            pending_penalty <- penalty_of_pending_index(pending_index)
-            if (pending_penalty < best_pending_penalty) {
-                best_pending_index <- pending_index
-                best_pending_penalty <- pending_penalty
-            }
-        }
-
-        return (best_pending_index)
-    }
-
-    for (merge_index in 1:merges_count) {
-        best_pending_index <- find_best_pending_index()
-        pending_indices <- c(best_pending_index, best_pending_index + 1)
-
-        new_indices <- c()
-        height <- 0
-
-        for (entry_index in 1:2) {
-            pending_index <- pending_indices[entry_index]
-            pending_merge <- pending_merges[[pending_index]]
-
-            if (pending_merge$index < 0) {
-                stopifnot(length(pending_merge$new_indices) == 1)
-                new_index <- pending_merge$new_indices[1]
-                merge_of_new[merge_index, entry_index] <- pending_merge$index
-            } else {
-                merge_of_new[merge_index, entry_index] <- pending_merge$index
-            }
-
-            new_indices <- c(new_indices, pending_merge$new_indices)
-            height <- max(height, pending_merge$height)
-        }
-
-        height <- height + 1
-        height_of_new[merge_index] <- height
-
-        outside_count <- pending_merges[[best_pending_index]]$merge_outside_count
-        pending_merges[[best_pending_index]] <- NULL
-        if (best_pending_index < length(pending_merges)) {
-            merge_outside_count <- merge_outside_of_subset(merge_of_old, new_of_old,
-                                           c(new_indices,
-                                             pending_merges[[best_pending_index + 1]]$new_indices))
-        } else {
-            merge_outside_count = indices_count
-        }
-
-        pending_merges[[best_pending_index]] <-
-            list(index=merge_index, new_indices=new_indices, height=height,
-                 outside_count=outside_count, merge_outside_count=merge_outside_count)
-    }
-
-    clusters$merge <- merge_of_new
-    clusters$height <- height_of_new
-    clusters$order <- old_of_new
-
-    return (clusters)
-}
-
 #' Given a clustering of some data, and some ideal order we'd like to use to
 #' visualize it, reorder (but do not modify) the clustering to be as consistent
 #' as possible with this ideal order.
@@ -480,46 +328,6 @@ best_reordered_hclust <- function(clusters, ideal_order) {
     clusters$order <- old_of_new
 
     return (clusters)
-}
-
-# Given the merge array of an hclust, a permutation, and some new indices,
-# return how many extra nodes are covered by the minimal sub-tree that
-# covers the nodes identified by the new indices.
-merge_outside_of_subset <- function(merge_of_old, new_of_old, new_indices) {
-    merges_count <- dim(merge_of_old)[1]
-    indices_count <- length(new_indices)
-
-    merge_inside_count <- array(0, merges_count)
-    merge_outside_count <- array(0, merges_count)
-
-    for (merge_index in 1:merges_count) {
-        inside_count <- 0
-        outside_count <- 0
-
-        for (entry_index in 1:2) {
-            index <- merge_of_old[merge_index, entry_index]
-            if (index > 0) {
-                inside_count <- inside_count + merge_inside_count[index]
-                outside_count <- outside_count + merge_outside_count[index]
-            } else {
-                new_index <- new_of_old[-index]
-                if (new_index %in% new_indices) {
-                    inside_count <- inside_count + 1
-                } else {
-                    outside_count <- outside_count + 1
-                }
-            }
-        }
-
-        if (inside_count == indices_count) {
-            return (outside_count)
-        }
-
-        merge_inside_count[merge_index] <- inside_count
-        merge_outside_count[merge_index] <- outside_count
-    }
-
-    stopifnot(F)
 }
 
 # Given a clustering which specified some data order, given we reorder the
