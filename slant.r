@@ -322,7 +322,7 @@ reorder_frame <- function(data, order) {
 #'
 #' @export
 best_reordered_hclust <- function(clusters, ideal_order) {
-    old_of_new <- clusters$order
+    old_of_new <- ideal_order
     new_of_old <- Matrix::invPerm(old_of_new)
 
     merge <- clusters$merge
