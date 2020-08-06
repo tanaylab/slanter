@@ -322,22 +322,51 @@ reorder_frame <- function(data, order) {
 #'
 #' @export
 best_reordered_hclust <- function(clusters, ideal_order) {
-    old_of_mid <- clusters$order
-    mid_of_old <- Matrix::invPerm(old_of_mid)
+    old_of_new <- clusters$order
+    new_of_old <- Matrix::invPerm(old_of_new)
 
-    merge_of_old <- clusters$merge
-    merge_of_mid <- permute_merge(merge_of_old, mid_of_old)
+    merge <- clusters$merge
+    merges_count <- dim(merge)[1]
+    merge_data <- array(list(), merges_count)
 
-    tree_of_mid <- tree_of_merge(merge_of_mid)
+    for (merge_index in 1:merges_count) {
+        a_index <- merge[merge_index, 1]
+        b_index <- merge[merge_index, 2]
 
-    ideal_old_of_new <- ideal_order
-    ideal_new_of_old <- Matrix::invPerm(ideal_old_of_new)
-    ideal_new_of_mid <- ideal_new_of_old[old_of_mid]
+        if (a_index < 0) {
+            a_indices <- c(-a_index)
+            a_center <- new_of_old[-a_index]
+        } else {
+            a_data <- merge_data[[a_index]]
+            a_indices <- a_data$indices
+            a_center <- a_data$center
+        }
 
-    mid_of_new <- best_tree_compatible_order(tree_of_mid, ideal_new_of_mid)
-    old_of_new <- old_of_mid[mid_of_new]
+        if (b_index < 0) {
+            b_indices <- c(-b_index)
+            b_center <- new_of_old[-b_index]
+        } else {
+            b_data <- merge_data[[b_index]]
+            b_indices <- b_data$indices
+            b_center <- b_data$center
+        }
 
-    clusters$order <- old_of_new
+        a_members <- length(a_indices)
+        b_members <- length(b_indices)
+
+        merged_center <-
+            (a_members * a_center + b_members * b_center) / (a_members + b_members)
+
+        if (a_center < b_center) {
+            merged_indices <- c(a_indices, b_indices)
+        } else {
+            merged_indices <- c(b_indices, a_indices)
+        }
+
+        merge_data[[merge_index]] <- list(indices=merged_indices, center=merged_center)
+    }
+
+    clusters$order <- merge_data[[merges_count]]$indices
 
     return (clusters)
 }
@@ -365,128 +394,6 @@ permute_merge <- function(merge, new_of_old) {
     }
 
     return (merge)
-}
-
-# Given an hclust merge array, return a different tree representation of the clustering.
-tree_of_merge <- function(merge) {
-    low_indices <- c()
-    low_nodes <- c()
-    mid_indices <- c()
-    high_nodes <- c()
-    high_indices <- c()
-    flips <- c()
-
-    merges_count <- dim(merge)[1]
-    for (merge_index in 1:merges_count) {
-        low <- merge[merge_index, 1]
-        high <- merge[merge_index, 2]
-
-        if (low < 0) {
-            low_node <- NA
-            low_index <- -low
-            low_mid_index <- -low + 1
-        } else {
-            low_node <- low
-            low_index <- low_indices[low_node]
-            low_mid_index <- high_indices[low_node] + 1
-        }
-
-        if (high < 0) {
-            high_node <- NA
-            high_mid_index <- -high
-            high_index <- -high
-        } else {
-            high_node <- high
-            high_mid_index <- low_indices[high_node]
-            high_index <- high_indices[high_node]
-        }
-
-        stopifnot(low_mid_index == high_mid_index)
-
-        low_indices <- append(low_indices, low_index)
-        low_nodes <- append(low_nodes, low_node)
-        mid_indices <- append(mid_indices, low_mid_index)
-        high_nodes <- append(high_nodes, high_node)
-        high_indices <- append(high_indices, high_index)
-        flips <- append(flips, F)
-    }
-
-    return (list(low_indices=low_indices,
-                 low_nodes=low_nodes,
-                 mid_indices=mid_indices,
-                 high_nodes=high_nodes,
-                 high_indices=high_indices,
-                 flips=flips))
-}
-
-# Given a tree (computed from clusters merge array), and a target order for the nodes, compute the
-# order that is closest to the ideal, but still compatible with the tree.
-#
-# TODO: This is probably an over-complicated implementation.
-best_tree_compatible_order <- function(tree, ideal_new_of_old) {
-    count <- length(ideal_new_of_old)
-
-    indices <- as.vector(1:count)
-
-    new_of_old <- indices
-
-    did_change <- T
-
-    reorder_node <- function(root_node) {
-        low_node <- tree$low_nodes[root_node]
-        if (!is.na(low_node)) {
-            reorder_node(low_node)
-        }
-
-        high_node <- tree$high_nodes[root_node]
-        if (!is.na(high_node)) {
-            reorder_node(high_node)
-        }
-
-        old_low_indices <- tree$low_indices[root_node] : (tree$mid_indices[root_node] - 1)
-        old_high_indices <- tree$mid_indices[root_node] : tree$high_indices[root_node]
-        old_full_indices <- tree$low_indices[root_node] : tree$high_indices[root_node]
-
-        new_low_indices <- new_of_old[old_low_indices]
-        new_high_indices <- new_of_old[old_high_indices]
-
-        ideal_new_low_indices <- ideal_new_of_old[old_low_indices]
-        ideal_new_high_indices <- ideal_new_of_old[old_high_indices]
-
-        curr_low_diff <- new_low_indices - ideal_new_low_indices
-        curr_high_diff <- new_high_indices - ideal_new_high_indices
-
-        if (tree$flips[root_node]) {
-            low_delta <- -length(old_high_indices)
-            high_delta <- length(old_low_indices)
-        } else {
-            low_delta <- length(old_high_indices)
-            high_delta <- -length(old_low_indices)
-        }
-
-        flip_low_diff <- curr_low_diff + low_delta
-        flip_high_diff <- curr_high_diff + high_delta
-
-        curr_error <- sum(curr_low_diff * curr_low_diff) + sum(curr_high_diff * curr_high_diff)
-        flip_error <- sum(flip_low_diff * flip_low_diff) + sum(flip_high_diff * flip_high_diff)
-
-        if (flip_error < curr_error) {
-            did_change <<- T
-            tree$flips[root_node] <<- !tree$flips[root_node]
-
-            new_of_old[old_low_indices] <<- new_of_old[old_low_indices] + low_delta
-            new_of_old[old_high_indices] <<- new_of_old[old_high_indices] + high_delta
-        }
-    }
-
-    while (did_change) {
-        did_change <- F
-        reorder_node(length(tree$mid_indices))
-    }
-
-    old_of_new <- Matrix::invPerm(new_of_old)
-
-    return (old_of_new)
 }
 
 #' Hierarchically cluster ordered data.
