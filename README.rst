@@ -10,6 +10,12 @@ Use ``sheatmap`` as a drop-in replacement to ``pheatmap``. In general, any argum
 (except ``clustering_callback``) is forwarded to ``pheatmap``, so all the diagram aspects can be
 controlled in the usual way.
 
+.. note::
+
+   The ``clustering_callback`` is not supported, and the default ``clustering_method`` is
+   ``ward.D2`` (the only other supported method is ``ward.D``). Otherwise, everything should behave
+   identically to ``pheatmap``.
+
 Lower-level functions are also available; see the `code documentation <slant.r>`_ for details.
 
 The Problem

@@ -194,12 +194,12 @@ accelerated_cor <- function(data, ..., method='pearson') {
 #' If you want to cluster your data, you have two options:
 #'
 #' If you do not specify a clustering, and just request one (e.g.,
-#' ``cluster_rows=T``), then \code{sheatmap} will invoke \code{oclust} to
+#' \code{cluster_rows=T}), then \code{sheatmap} will invoke \code{oclust} to
 #' generate the "best" clustering that is also compatible with the slanted order.
 #' This is the default.
 #'
 #' Otherwise, \code{sheatmap} will obey any clustering it was given (e.g.,
-#' ``cluster_rows=hclust(...)``. Note that any given #' clustering tree allows
+#' \code{cluster_rows=hclust(...)}. Note that any given #' clustering tree allows
 #' for multiple orders, since in each node, the two sub-trees can be flipped,
 #' without modifying the tree. Thus, \code{sheatmap} will use the
 #' "best" order that is compatible with the given clustering.
@@ -207,6 +207,11 @@ accelerated_cor <- function(data, ..., method='pearson') {
 #' In addition, you can give this function any of the \code{pheatmap} flags,
 #' and it will just pass them on. This allows full control over the diagram's
 #' features.
+#'
+#' Note that \code{clustering_callback} is not supported. In addition, the
+#' default \code{clustering_method} here is \code{'ward.D2'} instead of
+#' \code{'complete'}, since the only methods supported by \code{oclust} are
+#' \code{'ward.D'} and \code{'ward.D2'}.
 #'
 #' @param data A rectangular matrix
 #' @param annotation_row Optional data frame describing each row.
@@ -237,6 +242,7 @@ sheatmap <- function(data, ...,
                      clustering_method='ward.D2',
                      clustering_callback=NA) {
     stopifnot(is.na(clustering_callback))  # Not implemented.
+    stopifnot(clustering_method %in% c('ward.D', 'ward.D2'))
 
     ideal_orders <-
         slanted_orders(data, order_rows=order_rows, order_cols=order_cols, same_order=same_order)
