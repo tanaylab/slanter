@@ -415,6 +415,8 @@ tree_of_merge <- function(merge) {
 
 # Given a tree (computed from clusters merge array), and a target order for the nodes, compute the
 # order that is closest to the ideal, but still compatible with the tree.
+#
+# TODO: This is probably an over-complicated implementation.
 best_tree_compatible_order <- function(tree, ideal_new_of_old) {
     count <- length(ideal_new_of_old)
 

@@ -36,13 +36,13 @@ we know that the batches are sampled at different times during a fast developmen
 interested in estimating how far along this process each batch is.
 
 Naively, we can compute a matrix of similarities between the batches, by correlating their RNA
-profiles. Technically, each element of this matrix tells us, for a specific pair of batches, how
-similar they are to each other. This is exactly the data we loaded above (after setting all negative
+profiles. That is, each element of this matrix tells us, for a specific pair of batches, how similar
+they are to each other. This is exactly the data we loaded above (after setting all negative
 correlations to zero).
 
 The next step would be to visualize this data. R helpfully gives us the ``pheatmap`` function, which
 will (by default) also cluster the data such that similar batches would be placed near each other.
-That is, in theory, we would not only get a nice visualization, but we can hope to use this to
+That is, in theory, we would not only get us a nice visualization, but we can hope to use this to
 obtain some meaningful order of the batches, which might map to a position along the development
 process we want to analyze.
 
@@ -58,7 +58,7 @@ Which gives us:
 
 At a first glance, this seems to indicate there are two very sharply distinguished sub-groups, with
 a third mixed group. We know the batches were sampled from a continuous process, and biological
-processes are never like this. We definitely can't use this to estimate the position of each batch
+processes are never this clean. We definitely can't use this to estimate the position of each batch
 along some development process.
 
 Perhaps the problem is with the clustering? We could invoke ``pheatmap`` without any clustering at
@@ -172,9 +172,9 @@ Will give us:
 
 .. image:: large_replaced_sheatmap.png
 
-Much better! Here we only the see the clear gradient as before, but also that it splits naturally to
-four phases (that smoothly transition from one to the next). We can highlight this by using
-``cutree``:
+Much better! Here we not only the see the clear gradient as before, but also that it splits
+naturally to a few phases (that smoothly transition from one to the next). We can highlight this by
+using ``cutree``:
 
 .. code:: r
 
