@@ -250,7 +250,7 @@ sheatmap <- function(data, ...,
         rows_order = ideal_orders$row
         cluster_rows <- oclust(rows_distances, order=rows_order, method=clustering_method)
     } else {
-        rows_order <- 1:dim(data)[1]
+        rows_order <- ideal_orders$rows
     }
 
     if (class(cluster_cols) == 'hclust') {
@@ -262,7 +262,7 @@ sheatmap <- function(data, ...,
         cols_order = ideal_orders$col
         cluster_cols <- oclust(cols_distances, order=cols_order, method=clustering_method)
     } else {
-        cols_order <- 1:dim(data)[2]
+        cols_order <- ideal_orders$cols
     }
 
     data <- data[rows_order, cols_order]
