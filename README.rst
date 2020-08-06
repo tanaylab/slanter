@@ -46,8 +46,8 @@ Gives us:
 
 .. image:: large_clustered_pheatmap.png
 
-At a first glance, this seems to indicate there are two very sharply defined sub-groups, with a less
-sharply defined sub-group. A closer look (below) will reveal a different picture.
+At a first glance, this seems to indicate there are two very sharply distinguished sub-groups, with
+a third mixed group. A closer look (below) will reveal a different picture.
 
 Slanted Matrices
 ----------------
@@ -165,8 +165,9 @@ Which gives us:
 
 .. image:: large_cut_replaced_sheatmap.png
 
-Which is pretty good, even though it doesn't have the claim of "optimality" that the original
-unrestricted clustering offers.
+Which is pretty good, even though it doesn't have the claim of "full optimality" that the original
+unrestricted clustering offers; instead it only promises "constrained optimality" of the clustering
+(subject to the slanting order).
 
 Ordered Clustering
 ------------------
@@ -184,19 +185,17 @@ is chosen to be compatible with the clustering tree. Here we do the opposite - w
 entities for the slanted matrix visualization, and then find a compatible clustering tree to go with
 it.
 
-To find a good clustering tree, we first define the similarity between groups of entities (non-leaf
-nodes). Say we have two groups A = { a_1, ... a_n } and B = { b_1, ... b_m }, we can define the
-similarity between A and B to be some function of all the similarity measures between all the pairs
-(a_i, b_j). We are using the average of all the measures as this seems to give the best results.
+In principle it is possible to adapt any clustering method to include an ordering constraint. We
+chose to adapt `Ward's method <https://en.wikipedia.org/wiki/Ward%27s_method>`_. In this method, the
+algorithm starts with each element on its own, and merges the two elements such that the total
+variance within the merge node is minimized. It recursively merges groups of elements (minimizing
+the variance each time) until obtaining the full clustering tree.
 
-Given the ability to measure the similarity between groups of entities, we use a heuristic to find a
-good clustering tree. The ordering constraint severely restricts the possible clustering trees,
-making this efficient with complexity of only O(n^2 log n).
-
-Specifically, this heuristic works bottom-up. It starts with each entity as a separate group (leaf
-tree nodes). At each step, it looks for the most similar pair of adjacent groups, and groups them
-together (adds a parent node above these two nodes). This is repeated until we end up with a single
-group (the root of the tree).
+The general Ward's method can pick any two element groups to combine at each step. The ordered
+``oclust`` variant is restricted to only choosing adjacent element groups, trusting the slanting
+order to make similar elements adjacent to each other. This has the secondary effect that it is very
+fast, which allowing for a practical pure R implementation. The full Ward's method is slower, so the
+R implementation resorts to using FORTRAN code.
 
 TODO
 ====

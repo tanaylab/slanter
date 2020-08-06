@@ -232,6 +232,8 @@ accelerated_cor <- function(data, ..., method='pearson') {
 #' @param clustering_callback Is not supported.
 #' @param ... Additional flags to pass to \code{pheatmap}.
 #' @return Whatever \code{pheatmap} returns.
+#'
+#' @export
 sheatmap <- function(data, ...,
                      annotation_col=NULL,
                      annotation_row=NULL,
@@ -268,7 +270,7 @@ sheatmap <- function(data, ...,
         if (is.null(rows_distances)) {
             rows_distances <- dist(data, method=clustering_distance_rows)
         }
-        cluster_rows <- oclust(rows_distances, ideal_orders$rows)
+        cluster_rows <- oclust(rows_distances, order=ideal_orders$rows, method='ward.D2')
         rows_order = ideal_orders$row
     } else {
         if (clusters == 'modify') {
@@ -287,7 +289,7 @@ sheatmap <- function(data, ...,
         if (is.null(cols_distances)) {
             cols_distances <- dist(data, method=clustering_distance_cols)
         }
-        cluster_cols <- oclust(cols_distances, ideal_orders$cols)
+        cluster_cols <- oclust(cols_distances, order=ideal_orders$cols, method='ward.D2')
         cols_order = ideal_orders$col
     } else {
         if (clusters == 'modify') {
@@ -321,6 +323,8 @@ sheatmap <- function(data, ...,
 #' @param frame A data frame to reorder the rows of.
 #' @param order An array containing indices permutation to apply to the rows.
 #' @return The data frame with the new row orders.
+#'
+#' @export
 reorder_frame <- function(data, order) {
     row_names <- rownames(data)
     if (ncol(data) == 1) {
@@ -340,6 +344,8 @@ reorder_frame <- function(data, order) {
 #' @param cluster_rows The existing clustering of the data.
 #' @param ideal_order The order we'd like to see the data in.
 #' @return A modified clustering which obeys the ideal order.
+#'
+#' @export
 best_modified_hclust <- function(clusters, order) {
     old_of_new <- order
     merge_of_old <- clusters$merge
@@ -453,6 +459,8 @@ best_modified_hclust <- function(clusters, order) {
 #' @param cluster The existing clustering of the data.
 #' @param ideal_order The order we'd like to see the data in.
 #' @return A reordered clustering which obeys, wherever possible, the ideal order.
+#'
+#' @export
 best_reordered_hclust <- function(clusters, ideal_order) {
     old_of_mid <- clusters$order
     mid_of_old <- Matrix::invPerm(old_of_mid)
@@ -659,46 +667,54 @@ best_tree_compatible_order <- function(tree, ideal_new_of_old) {
     return (old_of_new)
 }
 
-#' Cluster ordered data.
+#' Hierarchically cluster ordered data.
 #'
 #' Given a distance matrix for sorted objects, compute a hierarchical clustering preserving this
-#' order. That is, this is similar to \code{hclus} with the constraint that the result's order is
-#' always \code{1:N}. This can be applied to the results of \code{slanted_reorder\code}, to give
+#' order. That is, this is similar to \code{hclust} with the constraint that the result's order is
+#' always \code{1:N}.
+#'
+#' If an \code{order} is specified, assumes that the data will be re-ordered by this order.
+#' That is, the indices in the returned \code{hclust} object will refer to the post-reorder
+#' data locations, **not** to the current data locations.
+#'
+#" Currently, the only methods supported are \code{'ward.D'} and \code{'ward.D2'}.
+#'
+#' This can be applied to the results of \code{slanted_reorder\code}, to give
 #' a "plausible" clustering for the data.
 #'
 #' @param dist A distances object (as created by \code{dist}).
-#' @param order An optional permutation that will be applied to the data before applying the result to it.
+#' @param method The clustering method to use (only \code{'ward.D'} and \code{'ward.D2'} are supported}).
+#' @param order If specified, assume the data will be re-ordered by this order.
+#' @param members Optionally, the number of members in each element of the distances (by default, one each).
 #' @return A clustering object (as created by \code{hclust}).
 #'
 #' @export
-oclust <- function(dist, order=NULL) {
+oclust <- function(dist, method='ward.D2', order=NULL, members=NULL) {
     distances <- as.matrix(dist)
-
     stopifnot(dim(distances)[1] == dim(distances)[2])
     entities_count <- dim(distances)[1]
+
+    if (method == 'ward.D2') {
+        distances <- distances * distances
+        sqrt_height <- T
+    } else {
+        stopifnot(method %in% c('ward.D', 'ward.D2'))
+        sqrt_height <- F
+    }
 
     if (!is.null(order)) {
         distances <- distances[order, order]
     }
 
-    hclust <- bottom_up(distances)
-
-    hclust$method <- 'oclust'
-    hclust$order <- 1:entities_count
-
-    class(hclust) <- 'hclust'
-    return (hclust)
-}
-
-# TODO: This can be made to run much faster.
-bottom_up <- function(distances) {
-    entities_count <- dim(distances)[1]
     diag(distances) <- Inf
 
     merge <- matrix(0, nrow=entities_count - 1, ncol=2)
     height <- rep(0, entities_count - 1)
     merged_height <- rep(0, entities_count)
     groups <- -(1:entities_count)
+    if (is.null(members)) {
+        members <- rep(1, entities_count)
+    }
 
     for (merge_index in 1:(entities_count - 1)) {
         adjacent_distances <- pracma::Diag(distances, 1)
@@ -709,18 +725,53 @@ bottom_up <- function(distances) {
         grouped_indices <- groups[c(low_index, high_index)]
 
         merged_indices <- which(groups %in% grouped_indices)
+
         groups[merged_indices] <- merge_index
+
         merge[merge_index,] <- grouped_indices
 
-        height[merge_index] <- max(merged_height[merged_indices]) + adjacent_distances[low_index]
+        delta_height <- adjacent_distances[low_index]
+        if (sqrt_height) {
+            delta_height <- sqrt(delta_height)
+        }
+        height[merge_index] <- max(merged_height[merged_indices]) + delta_height
+
         merged_height[merged_indices] <- height[merge_index]
 
-        merged_distances <- apply(distances[,merged_indices], 1, mean)
-        distances[,merged_indices] <- merged_distances
-        distances[merged_indices,] <- rep(merged_distances, each=length(merged_indices))
+        a_index <- merged_indices[1]
+        b_index <- merged_indices[length(merged_indices)]
 
-        distances[merged_indices, merged_indices] <- Inf
+        a_members <- members[a_index]
+        b_members <- members[b_index]
+
+        members[merged_indices] <- a_members + b_members
+
+        a_b_distance_value <- distances[a_index, b_index]  # d(a, b)
+        a_b_distance_scaled <- members * a_b_distance_value  # |C| * d(a, b)
+
+        a_c_distance_slice <- distances[a_index, ] # d(a, c)
+        a_c_scale <- rep(a_members, entities_count) + members # |A| + |C|
+        a_c_distance_scaled <- a_c_distance_slice * a_c_scale # (|A| + |C|) * d(a, c)
+
+        b_c_distance_slice <- distances[b_index, ] # d(b, c)
+        b_c_scale <- rep(b_members, entities_count) + members # |B| + |C|
+        b_c_distance_scaled <- b_c_distance_slice * b_c_scale # (|B| + |C|) * d(b, c)
+
+        a_b_c_scale <- members + a_members + b_members  # |A| + |B| + |C|
+
+        # Ward: ( (|A| + |C|) * d(a,c) + (|B| + |C|) * d(b, c) - |C| * d(a, b) ) / ( |A| + |B| + |C| )
+        merged_distance <-
+            (a_c_distance_scaled + b_c_distance_scaled - a_b_distance_scaled) / a_b_c_scale
+
+        distances[,merged_indices] <- merged_distance
+        distances[merged_indices,] <- rep(merged_distance, each=length(merged_indices))
     }
 
-    return (list(merge=merge, height=height))
+    hclust <- list(merge=merge, height=height)
+
+    hclust$method <- 'oclust'
+    hclust$order <- 1:entities_count
+    class(hclust) <- 'hclust'
+
+    return (hclust)
 }
