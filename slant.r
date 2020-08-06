@@ -1,3 +1,9 @@
+# TODO: Remove this when converting to a proper R package.
+require('Matrix')
+require('pheatmap')
+require('pracma')
+require('wrapr')
+
 #' Compute rows and columns orders which move high values close to the diagonal.
 #'
 #' For a matrix expressing the cross-similarity between two (possibly different)
