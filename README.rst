@@ -4,7 +4,7 @@ Slant.R
 Installation and Usage
 ----------------------
 
-Download `slant.r <slant.r>`_. Then, ``source('slant.r')``, and use ``sheatmap`` a drop-in
+Download `slant.r <slant.r>`_. Then, ``source('slant.r')``, and use ``sheatmap`` as a drop-in
 replacement to ``pheatmap``.
 
 In general, any argument to ``sheatmap`` (except ``clustering_callback``) is forwarded to
