@@ -316,8 +316,8 @@ sheatmap <- function(data, ...,
 
 #' Reorder the rows of a frame.
 #'
-#' If you expect \code{data[order,]} to "just work", you haven't been using R for very long. It is
-#' this sort of thing that makes me *hate* coding in R.
+#' You'd expect \code{data[order,]} to "just work". It doesn't for data frames with a single column,
+#' which happens for annotation data, hence the need for this function. Sigh.
 #'
 #' @param frame A data frame to reorder the rows of.
 #' @param order An array containing indices permutation to apply to the rows.
