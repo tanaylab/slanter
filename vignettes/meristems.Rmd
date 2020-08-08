@@ -101,8 +101,8 @@ sheatmap(meristems, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_co
   The `sheatmap` function wraps all this (with additional functionality described below), similarly
   to the way `pheatmap` wraps the unordered `hclust` functionality.
 
-  This works for any size (rectangular, asymmetric) similarity matrix, not necessarily the (square,
-  symmetric) matrix one gets from computing correlations.
+  This is not restricted to the square symmetric) matrix one gets from computing correlations. It
+  will also work just as well for a rectangular asymmetric similarity matrix.
 
   The code actually works on the square of the data. This works OK-ish if the similarity data
   is a correlation and one takes -1 (perfect negative correlation) to be as strong a similarity
@@ -111,7 +111,7 @@ sheatmap(meristems, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_co
   by setting all negative correlations to zero.
 
 What if we still want to see the cluster structure of our data? The `sheatmap` function provides two
-options to do this, with different trade-offs.
+main options to do this, with different trade-offs.
 
 ## Reordered Clustering
 
@@ -125,12 +125,13 @@ the ideal order `1, 2, 3, 4`, then `sheatmap` will use the `reorder_hclust` func
 equivalent clustering tree `( (1, 2), (3, 4) )`. In general, however, one can't always get exactly
 the ideal order; `reorder_hclust` does the best it can.
 
-So, in the reasonable expectation that `hclust` gave us the "optimal" clustering tree, and the only
-problem was the tree order, we try:
+We don't have an a-priory clustering, but we did get one from `pheatmap` (that is, `hclust`). We
+might reasonably assume the only problem is not with that tree as of itself, but just with the fact
+it is essentially in a random order. Assuming all this, we can ask `sheatmap` to use the same
+`hclust` as `pheatmap`, and merely reorder it for improved visualization, by writing:
 
 ```{r, fig.show='hold'}
-clusters <- stats::hclust(stats::dist(meristems), method='ward.D2')
-sheatmap(meristems, show_rownames=F, show_colnames=F, cluster_rows=clusters, cluster_cols=clusters)
+sheatmap(meristems, show_rownames=F, show_colnames=F, oclust_rows=F, oclust_cols=F)
 ```
 
 Better... But not a great result. We do see a hint that there's a smooth transition between two
@@ -141,12 +142,9 @@ data in the "best possible" way.
 
 ## Ordered Clustering
 
-Since we don't have a suitable a-priori clustering, we can ask `sheatmap` to generate a clustering
-for us (in the same way as for `pheatmap`, e.g. `cluster_rows=T`).
-
-In this (default) case, `sheatmap` will use `oclust` to generate a clustering tree, which is
-constrained to be compatible with the "ideal" slanted order. That is, we try replacing the simple
-use of `pheatmap` with the simple use of `sheatmap`:
+The default behavior for `sheatmap` is to ignore `hclust`, and instead use `oclust` to generate a
+clustering tree, which is constrained to be compatible with the "ideal" slanted order. That is, we
+can replace the simple use of `pheatmap` with the simple use of `sheatmap`:
 
 ```{r, fig.show='hold'}
 sheatmap(meristems, show_rownames=F, show_colnames=F)

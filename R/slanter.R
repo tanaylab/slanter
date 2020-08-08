@@ -179,37 +179,59 @@ slanted_reorder <- function(data, ..., order_rows=T, order_cols=T, same_order=F)
 #' Plot a heatmap with values as close to the diagonal as possible.
 #'
 #' Given a matrix expressing the cross-similarity between two (possibly different) sets of entities,
-#' this will reorder it to move the high values close to the diagonal, for better visualizations.
+#' this will reorder it to move the high values close to the diagonal, for a better visualization.
 #'
-#' If you want to cluster your data, you have two options:
+#' If you have an a-priori order for the rows and/or columns, you can prevent reordering either or
+#' both by specifying \code{order_rows=F} and/or \code{order_cols=F}. Otherwise,
+#' \code{slanted_orders} is used to compute the "ideal" slanted order for the data.
 #'
-#' If you do not specify a clustering, and just request one (e.g., \code{cluster_rows=T}), then
-#' \code{sheatmap} will invoke \code{oclust} to generate the "best" clustering that is also
-#' compatible with the slanted order. This is the default.
+#' By default, the rows and columns are ordered independently from each other. If the matrix is
+#' asymmetric but square (e.g., a matrix of weights of a directed graph such as a
+#' K-nearest-neighbors graph), then you can can specify \code{same_order=T} to force both rows and
+#' columns to the same order.
 #'
-#' Otherwise, \code{sheatmap} will preserve the clustering it was given (e.g.,
-#' \code{cluster_rows=hclust(...)}. Note that any given #' clustering tree allows for multiple
-#' orders, since in each node, the two sub-trees can be flipped, without modifying the tree. Thus,
-#' \code{sheatmap} will use the "best" order that is compatible with the given clustering.
+#' There are four options for controlling clustering:
+#'
+#' * By default, \code{sheatmap} will generate a clustering tree using \code{oclust}, to generate
+#'   the "best" clustering that is also compatible with the slanted order.
+#'
+#' * Request that \code{sheatmap} will use the same \code{hclust} as
+#'   \code{pheatmap} (e.g., \code{oclust_rows=F}). In this case, the tree is reordered to
+#'   be the "most compatible" with the target slanted order. That is, \code{sheatmap} will invoke
+#'   \code{reorder_hclust} so that, for each node of the tree, the order of the two sub-trees will
+#'   be chosen to best match the target slanted order. The end result need not be identical to the
+#'   slanted order, but is as close as possible given the \code{hclust} clustering tree.
+#'
+#' * Specify an explicit clustering (e.g., \code{cluster_rows=hclust(...)}. In this case,
+#'   \code{sheatmap} will again merely reorder the tree but will not modify it.
+#'
+#" * Disable clustering altogether (e.g., \code{cluster_rows=F}).
 #'
 #' In addition, you can give this function any of the \code{pheatmap} flags, and it will just pass
 #' them on. This allows full control over the diagram's features.
 #'
 #' Note that \code{clustering_callback} is not supported. In addition, the default
-#' \code{clustering_method} here is \code{'ward.D2'} instead of \code{'complete'}, since the only
-#' methods supported by \code{oclust} are \code{'ward.D'} and \code{'ward.D2'}.
+#' \code{clustering_method} here is \code{ward.D2} instead of \code{complete}, since the only
+#' methods supported by \code{oclust} are \code{ward.D} and \code{ward.D2}.
 #'
 #' @param data A rectangular matrix
 #' @param annotation_row Optional data frame describing each row.
 #' @param annotation_col Optional data frame describing each column.
-#' @param order_rows Whether to reorder the rows.
-#' @param order_cols Whether to reorder the columns.
-#' @param same_order Whether to apply the same order to both rows and columns.
+#' @param order_rows Whether to reorder the rows. Otherwise, use the current order.
+#' @param order_cols Whether to reorder the columns. Otherwise, use the current order.
+#' @param same_order Whether to apply the same order to both rows and columns (if reordering both).
 #' @param cluster_rows Whether to cluster the rows, or the clustering to use.
 #' @param cluster_cols Whether to cluster the columns, or the clustering to use.
-#' @param clustering_distance_cols The default method for computing column distances (by default, \code{euclidian}).
-#' @param clustering_distance_rows The default method for computing row distances (by default, \code{euclidian}).
-#' @param clustering_method The default method to use for clustering (by default, \code{ward.D2}).
+#' @param oclust_cols Whether to use \code{oclust} instead of \code{hclust} for the columns (if
+#'        clustering them).
+#' @param oclust_rows Whether to use \code{oclust} instead of \code{hclust} for the rows (if
+#'        clustering them).
+#' @param clustering_distance_cols The default method for computing column distances (by default,
+#'        \code{euclidian}).
+#' @param clustering_distance_rows The default method for computing row distances (by default,
+#'        \code{euclidian}).
+#' @param clustering_method The default method to use for hierarchical clustering (by default,
+#'        \code{ward.D2} and *not* \code{complete}).
 #' @param clustering_callback Is not supported.
 #' @param ... Additional flags to pass to \code{pheatmap}.
 #' @return Whatever \code{pheatmap} returns.
@@ -223,6 +245,8 @@ sheatmap <- function(data, ...,
                      same_order=F,
                      cluster_rows=T,
                      cluster_cols=T,
+                     oclust_rows=T,
+                     oclust_cols=T,
                      clustering_distance_rows='euclidian',
                      clustering_distance_cols='euclidian',
                      clustering_method='ward.D2',
@@ -233,28 +257,48 @@ sheatmap <- function(data, ...,
     ideal_orders <-
         slanted_orders(data, order_rows=order_rows, order_cols=order_cols, same_order=same_order)
 
-    if (class(cluster_rows) == 'hclust') {
-        cluster_rows <- reorder_hclust(cluster_rows, ideal_orders$rows)
-        rows_order <- cluster_rows$order
-        cluster_rows <- pre_ordered_hclust(cluster_rows)
-    } else if (cluster_rows) {
+    rows_order <- NULL
+
+    if (class(cluster_rows) == 'logical' && cluster_rows) {
         rows_distances <- stats::dist(data, method=clustering_distance_rows)
-        rows_order = ideal_orders$row
-        cluster_rows <- oclust(rows_distances, order=rows_order, method=clustering_method)
-    } else {
-        rows_order <- ideal_orders$rows
+        if (oclust_rows) {
+            rows_order = ideal_orders$row
+            cluster_rows <- oclust(rows_distances, order=rows_order, method=clustering_method)
+        } else {
+            cluster_rows <- stats::hclust(rows_distances, method=clustering_method)
+        }
     }
 
-    if (class(cluster_cols) == 'hclust') {
-        cluster_cols <- reorder_hclust(cluster_cols, ideal_orders$cols)
-        cols_order <- cluster_cols$order
-        cluster_cols <- pre_ordered_hclust(cluster_cols)
-    } else if (cluster_cols) {
+    if (is.null(rows_order)) {
+        if (class(cluster_rows) == 'hclust') {
+            cluster_rows <- reorder_hclust(cluster_rows, ideal_orders$rows)
+            rows_order <- cluster_rows$order
+            cluster_rows <- pre_ordered_hclust(cluster_rows)
+        } else {
+            rows_order <- ideal_orders$row
+        }
+    }
+
+    cols_order <- NULL
+
+    if (class(cluster_cols) == 'logical' && cluster_cols) {
         cols_distances <- stats::dist(data, method=clustering_distance_cols)
-        cols_order = ideal_orders$col
-        cluster_cols <- oclust(cols_distances, order=cols_order, method=clustering_method)
-    } else {
-        cols_order <- ideal_orders$cols
+        if (oclust_cols) {
+            cols_order = ideal_orders$col
+            cluster_cols <- oclust(cols_distances, order=cols_order, method=clustering_method)
+        } else {
+            cluster_cols <- stats::hclust(cols_distances, method=clustering_method)
+        }
+    }
+
+    if (is.null(cols_order)) {
+        if (class(cluster_cols) == 'hclust') {
+            cluster_cols <- reorder_hclust(cluster_cols, ideal_orders$cols)
+            cols_order <- cluster_cols$order
+            cluster_cols <- pre_ordered_hclust(cluster_cols)
+        } else {
+            cols_order <- ideal_orders$col
+        }
     }
 
     data <- data[rows_order, cols_order]
@@ -386,15 +430,15 @@ permute_merge <- function(merge, new_of_old) {
 #' the indices in the returned \code{hclust} object will refer to the post-reorder data locations,
 #' **not** to the current data locations.
 #'
-#" Currently, the only methods supported are \code{'ward.D'} and \code{'ward.D2'}.
+#" Currently, the only methods supported are \code{ward.D} and \code{ward.D2}.
 #'
 #' This can be applied to the results of \code{slanted_reorder}, to give a "plausible"
 #' clustering for the data.
 #'
 #' @param distances A distances object (as created by \code{stats::dist}).
-#' @param method The clustering method to use (only \code{'ward.D'} and \code{'ward.D2'} are supported).
+#' @param method The clustering method to use (only \code{ward.D} and \code{ward.D2} are supported).
 #' @param order If specified, assume the data will be re-ordered by this order.
-#' @param members Optionally, the number of members in each element of the distances (by default, one each).
+#' @param members Optionally, the number of members for each row/column of the distances (by default, one each).
 #' @param ... No additional arguments are allowed.
 #' @return A clustering object (as created by \code{hclust}).
 #'

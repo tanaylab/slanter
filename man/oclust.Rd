@@ -12,11 +12,11 @@ oclust(distances, ..., method = "ward.D2", order = NULL,
 
 \item{...}{No additional arguments are allowed.}
 
-\item{method}{The clustering method to use (only \code{'ward.D'} and \code{'ward.D2'} are supported).}
+\item{method}{The clustering method to use (only \code{ward.D} and \code{ward.D2} are supported).}
 
 \item{order}{If specified, assume the data will be re-ordered by this order.}
 
-\item{members}{Optionally, the number of members in each element of the distances (by default, one each).}
+\item{members}{Optionally, the number of members for each row/column of the distances (by default, one each).}
 }
 \value{
 A clustering object (as created by \code{hclust}).
