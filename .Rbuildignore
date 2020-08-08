@@ -1,0 +1,5 @@
+^\.git.*
+junk.*
+\.swo$
+\.swp$
+Makefile
