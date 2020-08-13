@@ -1,7 +1,7 @@
 ---
 title: Analyzing meristems data
 author: Oren Ben-Kiki
-date: 2020-08-08
+date: 2020-08-13
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{meristems}
@@ -101,7 +101,7 @@ sheatmap(meristems, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_co
   The `sheatmap` function wraps all this (with additional functionality described below), similarly
   to the way `pheatmap` wraps the unordered `hclust` functionality.
 
-  This is not restricted to the square symmetric) matrix one gets from computing correlations. It
+  This is not restricted to the square symmetric matrix one gets from computing correlations. It
   will also work just as well for a rectangular asymmetric similarity matrix.
 
   The code actually works on the square of the data. This works OK-ish if the similarity data
@@ -160,7 +160,7 @@ naturally to a few phases (that smoothly transition from one to the next). We ca
 using the `cutree` flags:
 
 ```{r, fig.show='hold'}
-sheatmap(meristems, show_rownames=F, show_colnames=F, cutree_rows=4, cutree_cols=4)
+sheatmap(meristems, show_rownames=F, show_colnames=F, cutree_rows=5, cutree_cols=5)
 ```
 
 *Implementation notes:*
