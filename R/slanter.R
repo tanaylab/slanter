@@ -178,9 +178,8 @@ slanted_reorder <- function(data, ..., order_data=NULL,
     }
     stopifnot(all(dim(order_data) == dim(data)))
 
-    orders <- slanted_orders(order_data,
-                             order=order, order_rows=order_rows, order_cols=order_cols,
-                             same_order=same_order)
+    orders <- slanted_orders(order_data, same_order=same_order,
+                             order_rows=order_rows, order_cols=order_cols)
 
     return (data[orders$rows, orders$cols])
 }
