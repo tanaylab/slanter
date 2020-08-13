@@ -4,9 +4,10 @@
 \alias{sheatmap}
 \title{Plot a heatmap with values as close to the diagonal as possible.}
 \usage{
-sheatmap(data, ..., annotation_col = NULL, annotation_row = NULL,
-  order_rows = T, order_cols = T, same_order = F, cluster_rows = T,
-  cluster_cols = T, oclust_rows = T, oclust_cols = T,
+sheatmap(data, ..., order_data = NULL, annotation_col = NULL,
+  annotation_row = NULL, order_rows = T, order_cols = T,
+  same_order = F, cluster_rows = T, cluster_cols = T,
+  oclust_rows = T, oclust_cols = T,
   clustering_distance_rows = "euclidian",
   clustering_distance_cols = "euclidian",
   clustering_method = "ward.D2", clustering_callback = NA)
@@ -15,6 +16,8 @@ sheatmap(data, ..., annotation_col = NULL, annotation_row = NULL,
 \item{data}{A rectangular matrix}
 
 \item{...}{Additional flags to pass to \code{pheatmap}.}
+
+\item{order_data}{An optional matrix of the same size to use for computing the orders.}
 
 \item{annotation_col}{Optional data frame describing each column.}
 

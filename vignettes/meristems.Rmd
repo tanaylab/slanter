@@ -110,6 +110,11 @@ sheatmap(meristems, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_co
   it is all non-negative, where larger values indicate "more similarity" - which we have done here
   by setting all negative correlations to zero.
 
+  You can provide a different `order_data`. It must have the same shape as the reordered `data`, but
+  may contain any computed appropriate similarity values (typically, only non-negative values). This
+  will be used to only compute the best order, and then this order will be applied to the actually
+  presented data (which may contain arbitrary, including negative, values).
+
 What if we still want to see the cluster structure of our data? The `sheatmap` function provides two
 main options to do this, with different trade-offs.
 

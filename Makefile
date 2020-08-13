@@ -1,6 +1,6 @@
 .PHONY: all docs build check
 
-all: docs
+all: for-commit
 
 for-commit: docs build check
 

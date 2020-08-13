@@ -161,6 +161,7 @@ slanted_orders <- function(data, ..., order_rows=T, order_cols=T,
 #' course \code{sheatmap} does this internally for you.
 #'
 #' @param data A rectangular matrix.
+#' @param order_data An optional matrix of the same size to use for computing the orders.
 #' @param order_rows Whether to reorder the rows.
 #' @param order_cols Whether to reorder the columns.
 #' @param same_order Whether to apply the same order to both rows and columns.
@@ -168,11 +169,19 @@ slanted_orders <- function(data, ..., order_rows=T, order_cols=T,
 #' @return A matrix of the same shape whose rows and columns are a permutation of the input.
 #'
 #' @export
-slanted_reorder <- function(data, ..., order_rows=T, order_cols=T, same_order=F) {
+slanted_reorder <- function(data, ..., order_data=NULL,
+                            order_rows=T, order_cols=T, same_order=F) {
     wrapr::stop_if_dot_args(substitute(list(...)), 'slanted_reorder')
-    orders <- slanted_orders(data,
+
+    if (is.null(order_data)) {
+        order_data = data
+    }
+    stopifnot(all(dim(order_data) == dim(data)))
+
+    orders <- slanted_orders(order_data,
                              order=order, order_rows=order_rows, order_cols=order_cols,
                              same_order=same_order)
+
     return (data[orders$rows, orders$cols])
 }
 
@@ -215,6 +224,7 @@ slanted_reorder <- function(data, ..., order_rows=T, order_cols=T, same_order=F)
 #' methods supported by \code{oclust} are \code{ward.D} and \code{ward.D2}.
 #'
 #' @param data A rectangular matrix
+#' @param order_data An optional matrix of the same size to use for computing the orders.
 #' @param annotation_row Optional data frame describing each row.
 #' @param annotation_col Optional data frame describing each column.
 #' @param order_rows Whether to reorder the rows. Otherwise, use the current order.
@@ -238,6 +248,7 @@ slanted_reorder <- function(data, ..., order_rows=T, order_cols=T, same_order=F)
 #'
 #' @export
 sheatmap <- function(data, ...,
+                     order_data=NULL,
                      annotation_col=NULL,
                      annotation_row=NULL,
                      order_rows=T,
@@ -254,8 +265,14 @@ sheatmap <- function(data, ...,
     stopifnot(is.na(clustering_callback))  # Not implemented.
     stopifnot(clustering_method %in% c('ward.D', 'ward.D2'))
 
+    if (is.null(order_data)) {
+        order_data = data
+    }
+    stopifnot(all(dim(order_data) == dim(data)))
+
     ideal_orders <-
-        slanted_orders(data, order_rows=order_rows, order_cols=order_cols, same_order=same_order)
+        slanted_orders(order_data, order_rows=order_rows, order_cols=order_cols,
+                       same_order=same_order)
 
     rows_order <- NULL
 

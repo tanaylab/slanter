@@ -17,6 +17,6 @@ reorder_frame(frame, order)
 The data frame with the new row orders.
 }
 \description{
-If you expect \code{data[order,]} to "just work", you haven't been using R for very long. It is
-this sort of thing that makes me *hate* coding in R.
+You'd expect \code{data[order,]} to "just work". It doesn't for data frames with a single column,
+which happens for annotation data, hence the need for this function. Sigh.
 }
