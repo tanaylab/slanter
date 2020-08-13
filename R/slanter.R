@@ -337,7 +337,6 @@ sheatmap <- function(data, ...,
 #'
 #' @param frame A data frame to reorder the rows of.
 #' @param order An array containing indices permutation to apply to the rows.
-#' @param ... No additional arguments are allowed.
 #' @return The data frame with the new row orders.
 #'
 #' @export
