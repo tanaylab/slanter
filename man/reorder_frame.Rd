@@ -10,8 +10,6 @@ reorder_frame(frame, order)
 \item{frame}{A data frame to reorder the rows of.}
 
 \item{order}{An array containing indices permutation to apply to the rows.}
-
-\item{...}{No additional arguments are allowed.}
 }
 \value{
 The data frame with the new row orders.
