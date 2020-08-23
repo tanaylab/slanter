@@ -36,6 +36,8 @@ To load this `meristems` similarity matrix (and the `slanter` functions), write:
 ```{r}
 library('slanter')
 data('meristems')
+similarity <- meristems
+similarity[similarity < 0] = 0
 ```
 
 The next step would be to visualize this data. R helpfully gives us the `pheatmap` function, which
@@ -87,7 +89,7 @@ close to the diagonal as possible. This, in theory, should give us a clearer ind
 overall structure of the similarity data. Ignoring clustering for a moment, we therefore try:
 
 ```{r, fig.show='hold'}
-sheatmap(meristems, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_cols=F)
+sheatmap(meristems, order_data=similarity, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_cols=F)
 ```
 
 **This is exactly the same data as before.**
@@ -110,10 +112,11 @@ sheatmap(meristems, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_co
   it is all non-negative, where larger values indicate "more similarity" - which we have done here
   by setting all negative correlations to zero.
 
-  You can provide a different `order_data`. It must have the same shape as the reordered `data`, but
-  may contain any computed appropriate similarity values (typically, only non-negative values). This
-  will be used to only compute the best order, and then this order will be applied to the actually
-  presented data (which may contain arbitrary, including negative, values).
+  We can show the original data while providing a different `order_data`. It must have the same
+  shape as the reordered `data`, but may contain any computed appropriate similarity values
+  (typically, only non-negative values). This will be used to only compute the best order, and then
+  this order will be applied to the actually presented data (which may contain arbitrary, including
+  negative, values).
 
 What if we still want to see the cluster structure of our data? The `sheatmap` function provides two
 main options to do this, with different trade-offs.
@@ -136,7 +139,7 @@ it is essentially in a random order. Assuming all this, we can ask `sheatmap` to
 `hclust` as `pheatmap`, and merely reorder it for improved visualization, by writing:
 
 ```{r, fig.show='hold'}
-sheatmap(meristems, show_rownames=F, show_colnames=F, oclust_rows=F, oclust_cols=F)
+sheatmap(meristems, order_data=similarity, show_rownames=F, show_colnames=F, oclust_rows=F, oclust_cols=F)
 ```
 
 Better... But not a great result. We do see a hint that there's a smooth transition between two
@@ -152,7 +155,7 @@ clustering tree, which is constrained to be compatible with the "ideal" slanted 
 can replace the simple use of `pheatmap` with the simple use of `sheatmap`:
 
 ```{r, fig.show='hold'}
-sheatmap(meristems, show_rownames=F, show_colnames=F)
+sheatmap(meristems, order_data=similarity, show_rownames=F, show_colnames=F)
 ```
 
 Much better! Here we not only the see the clear gradient as before, but also that it splits
@@ -160,7 +163,7 @@ naturally to a few phases (that smoothly transition from one to the next). We ca
 using the `cutree` flags:
 
 ```{r, fig.show='hold'}
-sheatmap(meristems, show_rownames=F, show_colnames=F, cutree_rows=5, cutree_cols=5)
+sheatmap(meristems, order_data=similarity, show_rownames=F, show_colnames=F, cutree_rows=5, cutree_cols=5)
 ```
 
 *Implementation notes:*

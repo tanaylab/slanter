@@ -10,7 +10,7 @@ docs:
 
 build:
 	rm -f ../slanter_*.tar.gz
-	cd .. && R CMD build slanter
+	cd .. && R CMD build --resave-data slanter
 
 check:
 	R CMD check --as-cran ../slanter_*.tar.gz

@@ -19,3 +19,9 @@ A reordered clustering which is consistent, wherever possible, the ideal order.
 Given a clustering of some data, and some ideal order we'd like to use to visualize it, reorder
 (but do not modify) the clustering to be as consistent as possible with this ideal order.
 }
+\examples{
+clusters <- hclust(dist(mtcars))
+clusters$order
+clusters <- slanter::reorder_hclust(clusters, 1:length(clusters$order))
+clusters$order
+}

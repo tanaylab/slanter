@@ -5,9 +5,9 @@
 \title{Plot a heatmap with values as close to the diagonal as possible.}
 \usage{
 sheatmap(data, ..., order_data = NULL, annotation_col = NULL,
-  annotation_row = NULL, order_rows = T, order_cols = T,
-  same_order = F, cluster_rows = T, cluster_cols = T,
-  oclust_rows = T, oclust_cols = T,
+  annotation_row = NULL, order_rows = TRUE, order_cols = TRUE,
+  same_order = FALSE, cluster_rows = TRUE, cluster_cols = TRUE,
+  oclust_rows = TRUE, oclust_cols = TRUE,
   clustering_distance_rows = "euclidian",
   clustering_distance_cols = "euclidian",
   clustering_method = "ward.D2", clustering_callback = NA)
@@ -59,12 +59,12 @@ this will reorder it to move the high values close to the diagonal, for a better
 }
 \details{
 If you have an a-priori order for the rows and/or columns, you can prevent reordering either or
-both by specifying \code{order_rows=F} and/or \code{order_cols=F}. Otherwise,
+both by specifying \code{order_rows=FALSE} and/or \code{order_cols=FALSE}. Otherwise,
 \code{slanted_orders} is used to compute the "ideal" slanted order for the data.
 
 By default, the rows and columns are ordered independently from each other. If the matrix is
 asymmetric but square (e.g., a matrix of weights of a directed graph such as a
-K-nearest-neighbors graph), then you can can specify \code{same_order=T} to force both rows and
+K-nearest-neighbors graph), then you can can specify \code{same_order=TRUE} to force both rows and
 columns to the same order.
 
 There are four options for controlling clustering:
@@ -73,13 +73,13 @@ There are four options for controlling clustering:
   the "best" clustering that is also compatible with the slanted order.
 
 * Request that \code{sheatmap} will use the same \code{hclust} as
-  \code{pheatmap} (e.g., \code{oclust_rows=F}). In this case, the tree is reordered to
+  \code{pheatmap} (e.g., \code{oclust_rows=FALSE}). In this case, the tree is reordered to
   be the "most compatible" with the target slanted order. That is, \code{sheatmap} will invoke
   \code{reorder_hclust} so that, for each node of the tree, the order of the two sub-trees will
   be chosen to best match the target slanted order. The end result need not be identical to the
   slanted order, but is as close as possible given the \code{hclust} clustering tree.
 
-* Specify an explicit clustering (e.g., \code{cluster_rows=hclust(...)}. In this case,
+* Specify an explicit clustering (e.g., \code{cluster_rows=hclust(...)}). In this case,
   \code{sheatmap} will again merely reorder the tree but will not modify it.
 
 In addition, you can give this function any of the \code{pheatmap} flags, and it will just pass
@@ -88,4 +88,9 @@ them on. This allows full control over the diagram's features.
 Note that \code{clustering_callback} is not supported. In addition, the default
 \code{clustering_method} here is \code{ward.D2} instead of \code{complete}, since the only
 methods supported by \code{oclust} are \code{ward.D} and \code{ward.D2}.
+}
+\examples{
+slanter::sheatmap(cor(t(mtcars)))
+slanter::sheatmap(cor(t(mtcars)), oclust_rows=FALSE, oclust_cols=FALSE)
+pheatmap::pheatmap(cor(t(mtcars)))
 }

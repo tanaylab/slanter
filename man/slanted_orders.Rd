@@ -4,13 +4,11 @@
 \alias{slanted_orders}
 \title{Compute rows and columns orders which move high values close to the diagonal.}
 \usage{
-slanted_orders(data, ..., order_rows = T, order_cols = T,
-  same_order = F, max_spin_count = 10)
+slanted_orders(data, order_rows = TRUE, order_cols = TRUE,
+  same_order = FALSE, max_spin_count = 10)
 }
 \arguments{
 \item{data}{A rectangular matrix.}
-
-\item{...}{No additional arguments are allowed.}
 
 \item{order_rows}{Whether to reorder the rows.}
 
@@ -29,4 +27,7 @@ this produces better results than clustering (e.g. as done by \code{pheatmap}). 
 clustering does not care about the order of each two sub-partitions. That is, clustering is as
 happy with \code{((2, 1), (4, 3))} as it is with the more sensible \code{((1, 2), (3, 4))}. As a
 result, visualizations of similarities using naive clustering can be misleading.
+}
+\examples{
+slanter::slanted_orders(cor(t(mtcars)))
 }

@@ -4,13 +4,11 @@
 \alias{slanted_reorder}
 \title{Reorder data rows and columns to move high values close to the diagonal.}
 \usage{
-slanted_reorder(data, ..., order_data = NULL, order_rows = T,
-  order_cols = T, same_order = F)
+slanted_reorder(data, order_data = NULL, order_rows = TRUE,
+  order_cols = TRUE, same_order = FALSE)
 }
 \arguments{
 \item{data}{A rectangular matrix.}
-
-\item{...}{No additional arguments are allowed.}
 
 \item{order_data}{An optional matrix of the same size to use for computing the orders.}
 
@@ -28,4 +26,7 @@ Given a matrix expressing the cross-similarity between two (possibly different) 
 this uses \code{slanted_orders} to compute the "best" order for visualizing the matrix, then
 returns the reordered data. Commonly used in \code{pheatmap(slanted_reorder(data), ...)}, and of
 course \code{sheatmap} does this internally for you.
+}
+\examples{
+slanter::slanted_reorder(cor(t(mtcars)))
 }

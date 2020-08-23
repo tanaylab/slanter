@@ -11,14 +11,15 @@
 #' @param order_cols Whether to reorder the columns.
 #' @param same_order Whether to apply the same order to both rows and columns.
 #' @param max_spin_count How many times to retry improving the solution before giving up.
-#' @param ... No additional arguments are allowed.
 #' @return A list with two keys, \code{rows} and \code{cols}, which contain the order.
 #'
 #' @export
-slanted_orders <- function(data, ..., order_rows=T, order_cols=T,
-                           same_order=F, max_spin_count=10) {
+#'
+#' @examples
+#' slanter::slanted_orders(cor(t(mtcars)))
+slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
+                           same_order=FALSE, max_spin_count=10) {
 
-    wrapr::stop_if_dot_args(substitute(list(...)), 'slanted_orders')
     rows_count <- dim(data)[1]
     cols_count <- dim(data)[2]
 
@@ -41,12 +42,12 @@ slanted_orders <- function(data, ..., order_rows=T, order_cols=T,
             spinning_rows_count <- 0
             spinning_cols_count <- 0
             spinning_same_count <- 0
-            was_changed <- T
+            was_changed <- TRUE
             error_rows <- NULL
             error_cols <- NULL
             error_same <- NULL
             while (was_changed) {
-                was_changed <- F
+                was_changed <- FALSE
                 ideal_index <- NULL
                 if (order_rows) {
                     sum_indexed_rows <- rowSums(sweep(squared_data, 2, cols_indices, `*`))
@@ -67,7 +68,7 @@ slanted_orders <- function(data, ..., order_rows=T, order_cols=T,
                             spinning_rows_count <- spinning_rows_count + 1
                         }
                         if (new_changed && spinning_rows_count < max_spin_count) {
-                            was_changed <- T
+                            was_changed <- TRUE
                             squared_data <<- squared_data[new_rows_permutation,]
                             rows_permutation <<- rows_permutation[new_rows_permutation]
                         }
@@ -97,7 +98,7 @@ slanted_orders <- function(data, ..., order_rows=T, order_cols=T,
                             spinning_cols_count <- spinning_cols_count + 1
                         }
                         if (new_changed && spinning_cols_count < max_spin_count) {
-                            was_changed <- T
+                            was_changed <- TRUE
                             squared_data <<- squared_data[,new_cols_permutation]
                             cols_permutation <<- cols_permutation[new_cols_permutation]
                         }
@@ -116,7 +117,7 @@ slanted_orders <- function(data, ..., order_rows=T, order_cols=T,
                         spinning_same_count <- spinning_same_count + 1
                     }
                     if (new_changed && spinning_same_count < max_spin_count) {
-                        was_changed <- T
+                        was_changed <- TRUE
                         squared_data <<- squared_data[new_permutation,new_permutation]
                         permutation <<- permutation[new_permutation]
                         rows_permutation <<- permutation
@@ -128,9 +129,9 @@ slanted_orders <- function(data, ..., order_rows=T, order_cols=T,
 
         discount_outliers <- function() {
             row_indices_matrix <- matrix(rep(rows_indices, each=cols_count),
-                                         nrow=rows_count, ncol=cols_count, byrow=T)
+                                         nrow=rows_count, ncol=cols_count, byrow=TRUE)
             col_indices_matrix <- matrix(rep(cols_indices, each=rows_count),
-                                         nrow=rows_count, ncol=cols_count, byrow=F)
+                                         nrow=rows_count, ncol=cols_count, byrow=FALSE)
 
             rows_per_col <- rows_count / cols_count
             cols_per_row <- cols_count / rows_count
@@ -165,14 +166,14 @@ slanted_orders <- function(data, ..., order_rows=T, order_cols=T,
 #' @param order_rows Whether to reorder the rows.
 #' @param order_cols Whether to reorder the columns.
 #' @param same_order Whether to apply the same order to both rows and columns.
-#' @param ... No additional arguments are allowed.
 #' @return A matrix of the same shape whose rows and columns are a permutation of the input.
 #'
 #' @export
-slanted_reorder <- function(data, ..., order_data=NULL,
-                            order_rows=T, order_cols=T, same_order=F) {
-    wrapr::stop_if_dot_args(substitute(list(...)), 'slanted_reorder')
-
+#'
+#' @examples
+#' slanter::slanted_reorder(cor(t(mtcars)))
+slanted_reorder <- function(data, order_data=NULL,
+                            order_rows=TRUE, order_cols=TRUE, same_order=FALSE) {
     if (is.null(order_data)) {
         order_data = data
     }
@@ -190,12 +191,12 @@ slanted_reorder <- function(data, ..., order_data=NULL,
 #' this will reorder it to move the high values close to the diagonal, for a better visualization.
 #'
 #' If you have an a-priori order for the rows and/or columns, you can prevent reordering either or
-#' both by specifying \code{order_rows=F} and/or \code{order_cols=F}. Otherwise,
+#' both by specifying \code{order_rows=FALSE} and/or \code{order_cols=FALSE}. Otherwise,
 #' \code{slanted_orders} is used to compute the "ideal" slanted order for the data.
 #'
 #' By default, the rows and columns are ordered independently from each other. If the matrix is
 #' asymmetric but square (e.g., a matrix of weights of a directed graph such as a
-#' K-nearest-neighbors graph), then you can can specify \code{same_order=T} to force both rows and
+#' K-nearest-neighbors graph), then you can can specify \code{same_order=TRUE} to force both rows and
 #' columns to the same order.
 #'
 #' There are four options for controlling clustering:
@@ -204,16 +205,16 @@ slanted_reorder <- function(data, ..., order_data=NULL,
 #'   the "best" clustering that is also compatible with the slanted order.
 #'
 #' * Request that \code{sheatmap} will use the same \code{hclust} as
-#'   \code{pheatmap} (e.g., \code{oclust_rows=F}). In this case, the tree is reordered to
+#'   \code{pheatmap} (e.g., \code{oclust_rows=FALSE}). In this case, the tree is reordered to
 #'   be the "most compatible" with the target slanted order. That is, \code{sheatmap} will invoke
 #'   \code{reorder_hclust} so that, for each node of the tree, the order of the two sub-trees will
 #'   be chosen to best match the target slanted order. The end result need not be identical to the
 #'   slanted order, but is as close as possible given the \code{hclust} clustering tree.
 #'
-#' * Specify an explicit clustering (e.g., \code{cluster_rows=hclust(...)}. In this case,
+#' * Specify an explicit clustering (e.g., \code{cluster_rows=hclust(...)}). In this case,
 #'   \code{sheatmap} will again merely reorder the tree but will not modify it.
 #'
-#" * Disable clustering altogether (e.g., \code{cluster_rows=F}).
+#" * Disable clustering altogether (e.g., \code{cluster_rows=FALSE}).
 #'
 #' In addition, you can give this function any of the \code{pheatmap} flags, and it will just pass
 #' them on. This allows full control over the diagram's features.
@@ -246,17 +247,22 @@ slanted_reorder <- function(data, ..., order_data=NULL,
 #' @return Whatever \code{pheatmap} returns.
 #'
 #' @export
+#'
+#' @examples
+#' slanter::sheatmap(cor(t(mtcars)))
+#' slanter::sheatmap(cor(t(mtcars)), oclust_rows=FALSE, oclust_cols=FALSE)
+#' pheatmap::pheatmap(cor(t(mtcars)))
 sheatmap <- function(data, ...,
                      order_data=NULL,
                      annotation_col=NULL,
                      annotation_row=NULL,
-                     order_rows=T,
-                     order_cols=T,
-                     same_order=F,
-                     cluster_rows=T,
-                     cluster_cols=T,
-                     oclust_rows=T,
-                     oclust_cols=T,
+                     order_rows=TRUE,
+                     order_cols=TRUE,
+                     same_order=FALSE,
+                     cluster_rows=TRUE,
+                     cluster_cols=TRUE,
+                     oclust_rows=TRUE,
+                     oclust_cols=TRUE,
                      clustering_distance_rows='euclidian',
                      clustering_distance_cols='euclidian',
                      clustering_method='ward.D2',
@@ -340,6 +346,11 @@ sheatmap <- function(data, ...,
 #' @return The data frame with the new row orders.
 #'
 #' @export
+#'
+#' @examples
+#' df <- data.frame(foo = c(1, 2, 3))
+#' df[c(1,3,2),]
+#' slanter::reorder_frame(df, c(1,3,2))
 reorder_frame <- function(frame, order) {
     row_names <- rownames(frame)
     if (ncol(frame) == 1) {
@@ -360,6 +371,12 @@ reorder_frame <- function(frame, order) {
 #' @return A reordered clustering which is consistent, wherever possible, the ideal order.
 #'
 #' @export
+#'
+#' @examples
+#' clusters <- hclust(dist(mtcars))
+#' clusters$order
+#' clusters <- slanter::reorder_hclust(clusters, 1:length(clusters$order))
+#' clusters$order
 reorder_hclust <- function(clusters, order) {
     old_of_new <- order
     new_of_old <- Matrix::invPerm(old_of_new)
@@ -454,12 +471,14 @@ permute_merge <- function(merge, new_of_old) {
 #' @param method The clustering method to use (only \code{ward.D} and \code{ward.D2} are supported).
 #' @param order If specified, assume the data will be re-ordered by this order.
 #' @param members Optionally, the number of members for each row/column of the distances (by default, one each).
-#' @param ... No additional arguments are allowed.
 #' @return A clustering object (as created by \code{hclust}).
 #'
 #' @export
-oclust <- function(distances, ..., method='ward.D2', order=NULL, members=NULL) {
-    wrapr::stop_if_dot_args(substitute(list(...)), 'oclust')
+#'
+#' @examples
+#' clusters <- slanter::oclust(dist(mtcars), order=1:dim(mtcars)[1])
+#' clusters$order
+oclust <- function(distances, method='ward.D2', order=NULL, members=NULL) {
 
     distances <- as.matrix(distances)
     stopifnot(dim(distances)[1] == dim(distances)[2])
@@ -467,10 +486,10 @@ oclust <- function(distances, ..., method='ward.D2', order=NULL, members=NULL) {
 
     if (method == 'ward.D2') {
         distances <- distances * distances
-        sqrt_height <- T
+        sqrt_height <- TRUE
     } else {
         stopifnot(method %in% c('ward.D', 'ward.D2'))
-        sqrt_height <- F
+        sqrt_height <- FALSE
     }
 
     if (!is.null(order)) {

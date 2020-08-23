@@ -4,13 +4,10 @@
 \alias{oclust}
 \title{Hierarchically cluster ordered data.}
 \usage{
-oclust(distances, ..., method = "ward.D2", order = NULL,
-  members = NULL)
+oclust(distances, method = "ward.D2", order = NULL, members = NULL)
 }
 \arguments{
 \item{distances}{A distances object (as created by \code{stats::dist}).}
-
-\item{...}{No additional arguments are allowed.}
 
 \item{method}{The clustering method to use (only \code{ward.D} and \code{ward.D2} are supported).}
 
@@ -33,4 +30,8 @@ the indices in the returned \code{hclust} object will refer to the post-reorder 
 
 This can be applied to the results of \code{slanted_reorder}, to give a "plausible"
 clustering for the data.
+}
+\examples{
+clusters <- slanter::oclust(dist(mtcars), order=1:dim(mtcars)[1])
+clusters$order
 }
