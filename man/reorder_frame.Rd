@@ -19,7 +19,7 @@ You'd expect \code{data[order,]} to "just work". It doesn't for data frames with
 which happens for annotation data, hence the need for this function. Sigh.
 }
 \examples{
-df <- data.frame(foo = c(1, 2, 3))
+df <- data.frame(foo=c(1, 2, 3))
 df[c(1,3,2),]
 slanter::reorder_frame(df, c(1,3,2))
 }

@@ -9,11 +9,8 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, comment="#>")
 ```
 
 ## The Problem
@@ -37,7 +34,7 @@ To load this `meristems` similarity matrix (and the `slanter` functions), write:
 library('slanter')
 data('meristems')
 similarity <- meristems
-similarity[similarity < 0] = 0
+similarity[similarity < 0] <- 0
 ```
 
 The next step would be to visualize this data. R helpfully gives us the `pheatmap` function, which

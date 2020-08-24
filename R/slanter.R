@@ -180,7 +180,7 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
 slanted_reorder <- function(data, order_data=NULL, order_rows=TRUE, order_cols=TRUE,
                             squared_order=TRUE, same_order=FALSE) {
     if (is.null(order_data)) {
-        order_data = data
+        order_data <- data
     }
     stopifnot(all(dim(order_data) == dim(data)))
 
@@ -279,7 +279,7 @@ sheatmap <- function(data, ...,
     stopifnot(clustering_method %in% c('ward.D', 'ward.D2'))
 
     if (is.null(order_data)) {
-        order_data = data
+        order_data <- data
     }
     stopifnot(all(dim(order_data) == dim(data)))
 
@@ -292,7 +292,7 @@ sheatmap <- function(data, ...,
     if (class(cluster_rows) == 'logical' && cluster_rows) {
         rows_distances <- stats::dist(data, method=clustering_distance_rows)
         if (oclust_rows) {
-            rows_order = ideal_orders$row
+            rows_order <- ideal_orders$row
             cluster_rows <- oclust(rows_distances, order=rows_order, method=clustering_method)
         } else {
             cluster_rows <- stats::hclust(rows_distances, method=clustering_method)
@@ -314,7 +314,7 @@ sheatmap <- function(data, ...,
     if (class(cluster_cols) == 'logical' && cluster_cols) {
         cols_distances <- stats::dist(data, method=clustering_distance_cols)
         if (oclust_cols) {
-            cols_order = ideal_orders$col
+            cols_order <- ideal_orders$col
             cluster_cols <- oclust(cols_distances, order=cols_order, method=clustering_method)
         } else {
             cluster_cols <- stats::hclust(cols_distances, method=clustering_method)
@@ -356,7 +356,7 @@ sheatmap <- function(data, ...,
 #' @export
 #'
 #' @examples
-#' df <- data.frame(foo = c(1, 2, 3))
+#' df <- data.frame(foo=c(1, 2, 3))
 #' df[c(1,3,2),]
 #' slanter::reorder_frame(df, c(1,3,2))
 reorder_frame <- function(frame, order) {
