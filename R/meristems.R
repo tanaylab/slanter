@@ -13,5 +13,7 @@
 #'
 #' @examples
 #' data(meristems)
-#' \donttest{slanter::sheatmap(showrownames=F, show_colnames=F)}
+#' similarity <- meristems
+#' similarity[similarity < 0] = 0
+#' slanter::sheatmap(meristems, order_data=similarity, show_rownames=F, show_colnames=F)
 "meristems"
