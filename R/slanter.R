@@ -6,9 +6,10 @@
 #' happy with \code{((2, 1), (4, 3))} as it is with the more sensible \code{((1, 2), (3, 4))}. As a
 #' result, visualizations of similarities using naive clustering can be misleading.
 #'
-#' @param data A rectangular matrix.
+#' @param data A rectangular matrix containing non-negative values.
 #' @param order_rows Whether to reorder the rows.
 #' @param order_cols Whether to reorder the columns.
+#' @param squared_order Whether to reorder to minimize the l2 norm (otherwise minimizes the l1 norm).
 #' @param same_order Whether to apply the same order to both rows and columns.
 #' @param max_spin_count How many times to retry improving the solution before giving up.
 #' @return A list with two keys, \code{rows} and \code{cols}, which contain the order.
@@ -18,7 +19,7 @@
 #' @examples
 #' slanter::slanted_orders(cor(t(mtcars)))
 slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
-                           same_order=FALSE, max_spin_count=10) {
+                           squared_order=TRUE, same_order=FALSE, max_spin_count=10) {
 
     rows_count <- dim(data)[1]
     cols_count <- dim(data)[2]
@@ -35,8 +36,11 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
     }
 
     if (order_rows || order_cols) {
-        squared_data <- data * data
-        epsilon <- min(squared_data[squared_data > 0]) / 10
+        stopifnot(min(data) >= 0)
+        if (squared_order) {
+            data <- data * data
+        }
+        epsilon <- min(data[data > 0]) / 10
 
         reorder_phase <- function() {
             spinning_rows_count <- 0
@@ -50,8 +54,8 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
                 was_changed <- FALSE
                 ideal_index <- NULL
                 if (order_rows) {
-                    sum_indexed_rows <- rowSums(sweep(squared_data, 2, cols_indices, `*`))
-                    sum_squared_rows <- rowSums(squared_data)
+                    sum_indexed_rows <- rowSums(sweep(data, 2, cols_indices, `*`))
+                    sum_squared_rows <- rowSums(data)
                     ideal_row_index <- (sum_indexed_rows + epsilon) / (sum_squared_rows + epsilon)
 
                     if (same_order) {
@@ -69,15 +73,15 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
                         }
                         if (new_changed && spinning_rows_count < max_spin_count) {
                             was_changed <- TRUE
-                            squared_data <<- squared_data[new_rows_permutation,]
+                            data <<- data[new_rows_permutation,]
                             rows_permutation <<- rows_permutation[new_rows_permutation]
                         }
                     }
                 }
 
                 if (order_cols) {
-                    sum_indexed_cols <- colSums(sweep(squared_data, 1, rows_indices, `*`))
-                    sum_squared_cols <- colSums(squared_data)
+                    sum_indexed_cols <- colSums(sweep(data, 1, rows_indices, `*`))
+                    sum_squared_cols <- colSums(data)
                     ideal_col_index <- (sum_indexed_cols + epsilon) / (sum_squared_cols + epsilon)
 
                     if (same_order) {
@@ -99,7 +103,7 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
                         }
                         if (new_changed && spinning_cols_count < max_spin_count) {
                             was_changed <- TRUE
-                            squared_data <<- squared_data[,new_cols_permutation]
+                            data <<- data[,new_cols_permutation]
                             cols_permutation <<- cols_permutation[new_cols_permutation]
                         }
                     }
@@ -118,7 +122,7 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
                     }
                     if (new_changed && spinning_same_count < max_spin_count) {
                         was_changed <- TRUE
-                        squared_data <<- squared_data[new_permutation,new_permutation]
+                        data <<- data[new_permutation,new_permutation]
                         permutation <<- permutation[new_permutation]
                         rows_permutation <<- permutation
                         cols_permutation <<- permutation
@@ -143,7 +147,7 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
             col_distance_matrix <- col_indices_matrix - ideal_col_indices_matrix
 
             weight_matrix <- (1 + abs(row_distance_matrix)) * (1 + abs(col_distance_matrix))
-            squared_data <<- squared_data / weight_matrix
+            data <<- data / weight_matrix
         }
 
         reorder_phase()
@@ -161,10 +165,11 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
 #' returns the reordered data. Commonly used in \code{pheatmap(slanted_reorder(data), ...)}, and of
 #' course \code{sheatmap} does this internally for you.
 #'
-#' @param data A rectangular matrix.
-#' @param order_data An optional matrix of the same size to use for computing the orders.
+#' @param data A rectangular matrix to reorder, of non-negative values (unless \code{order_data} is specified).
+#' @param order_data An optional matrix of non-negative values of the same size to use for computing the orders.
 #' @param order_rows Whether to reorder the rows.
 #' @param order_cols Whether to reorder the columns.
+#' @param squared_order Whether to reorder to minimize the l2 norm (otherwise minimizes the l1 norm).
 #' @param same_order Whether to apply the same order to both rows and columns.
 #' @return A matrix of the same shape whose rows and columns are a permutation of the input.
 #'
@@ -172,14 +177,15 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
 #'
 #' @examples
 #' slanter::slanted_reorder(cor(t(mtcars)))
-slanted_reorder <- function(data, order_data=NULL,
-                            order_rows=TRUE, order_cols=TRUE, same_order=FALSE) {
+slanted_reorder <- function(data, order_data=NULL, order_rows=TRUE, order_cols=TRUE,
+                            squared_order=TRUE, same_order=FALSE) {
     if (is.null(order_data)) {
         order_data = data
     }
     stopifnot(all(dim(order_data) == dim(data)))
 
-    orders <- slanted_orders(order_data, same_order=same_order,
+    orders <- slanted_orders(order_data,
+                             squared_order=squared_order, same_order=same_order,
                              order_rows=order_rows, order_cols=order_cols)
 
     return (data[orders$rows, orders$cols])
@@ -223,12 +229,13 @@ slanted_reorder <- function(data, order_data=NULL,
 #' \code{clustering_method} here is \code{ward.D2} instead of \code{complete}, since the only
 #' methods supported by \code{oclust} are \code{ward.D} and \code{ward.D2}.
 #'
-#' @param data A rectangular matrix
-#' @param order_data An optional matrix of the same size to use for computing the orders.
+#' @param data A rectangular matrix to plot, of non-negative values (unless \code{order_data} is specified).
+#' @param order_data An optional matrix of non-negative values of the same size to use for computing the orders.
 #' @param annotation_row Optional data frame describing each row.
 #' @param annotation_col Optional data frame describing each column.
 #' @param order_rows Whether to reorder the rows. Otherwise, use the current order.
 #' @param order_cols Whether to reorder the columns. Otherwise, use the current order.
+#' @param squared_order Whether to reorder to minimize the l2 norm (otherwise minimizes the l1 norm).
 #' @param same_order Whether to apply the same order to both rows and columns (if reordering both).
 #' @param cluster_rows Whether to cluster the rows, or the clustering to use.
 #' @param cluster_cols Whether to cluster the columns, or the clustering to use.
@@ -258,6 +265,7 @@ sheatmap <- function(data, ...,
                      annotation_row=NULL,
                      order_rows=TRUE,
                      order_cols=TRUE,
+                     squared_order=TRUE,
                      same_order=FALSE,
                      cluster_rows=TRUE,
                      cluster_cols=TRUE,

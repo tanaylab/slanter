@@ -5,16 +5,18 @@
 \title{Reorder data rows and columns to move high values close to the diagonal.}
 \usage{
 slanted_reorder(data, order_data = NULL, order_rows = TRUE,
-  order_cols = TRUE, same_order = FALSE)
+  order_cols = TRUE, squared_order = TRUE, same_order = FALSE)
 }
 \arguments{
-\item{data}{A rectangular matrix.}
+\item{data}{A rectangular matrix to reorder, of non-negative values (unless \code{order_data} is specified).}
 
-\item{order_data}{An optional matrix of the same size to use for computing the orders.}
+\item{order_data}{An optional matrix of non-negative values of the same size to use for computing the orders.}
 
 \item{order_rows}{Whether to reorder the rows.}
 
 \item{order_cols}{Whether to reorder the columns.}
+
+\item{squared_order}{Whether to reorder to minimize the l2 norm (otherwise minimizes the l1 norm).}
 
 \item{same_order}{Whether to apply the same order to both rows and columns.}
 }

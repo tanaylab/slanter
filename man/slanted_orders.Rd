@@ -5,14 +5,16 @@
 \title{Compute rows and columns orders which move high values close to the diagonal.}
 \usage{
 slanted_orders(data, order_rows = TRUE, order_cols = TRUE,
-  same_order = FALSE, max_spin_count = 10)
+  squared_order = TRUE, same_order = FALSE, max_spin_count = 10)
 }
 \arguments{
-\item{data}{A rectangular matrix.}
+\item{data}{A rectangular matrix containing non-negative values.}
 
 \item{order_rows}{Whether to reorder the rows.}
 
 \item{order_cols}{Whether to reorder the columns.}
+
+\item{squared_order}{Whether to reorder to minimize the l2 norm (otherwise minimizes the l1 norm).}
 
 \item{same_order}{Whether to apply the same order to both rows and columns.}
 

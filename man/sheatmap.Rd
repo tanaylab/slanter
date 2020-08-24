@@ -6,18 +6,18 @@
 \usage{
 sheatmap(data, ..., order_data = NULL, annotation_col = NULL,
   annotation_row = NULL, order_rows = TRUE, order_cols = TRUE,
-  same_order = FALSE, cluster_rows = TRUE, cluster_cols = TRUE,
-  oclust_rows = TRUE, oclust_cols = TRUE,
+  squared_order = TRUE, same_order = FALSE, cluster_rows = TRUE,
+  cluster_cols = TRUE, oclust_rows = TRUE, oclust_cols = TRUE,
   clustering_distance_rows = "euclidian",
   clustering_distance_cols = "euclidian",
   clustering_method = "ward.D2", clustering_callback = NA)
 }
 \arguments{
-\item{data}{A rectangular matrix}
+\item{data}{A rectangular matrix to plot, of non-negative values (unless \code{order_data} is specified).}
 
 \item{...}{Additional flags to pass to \code{pheatmap}.}
 
-\item{order_data}{An optional matrix of the same size to use for computing the orders.}
+\item{order_data}{An optional matrix of non-negative values of the same size to use for computing the orders.}
 
 \item{annotation_col}{Optional data frame describing each column.}
 
@@ -26,6 +26,8 @@ sheatmap(data, ..., order_data = NULL, annotation_col = NULL,
 \item{order_rows}{Whether to reorder the rows. Otherwise, use the current order.}
 
 \item{order_cols}{Whether to reorder the columns. Otherwise, use the current order.}
+
+\item{squared_order}{Whether to reorder to minimize the l2 norm (otherwise minimizes the l1 norm).}
 
 \item{same_order}{Whether to apply the same order to both rows and columns (if reordering both).}
 

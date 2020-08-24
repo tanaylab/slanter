@@ -109,18 +109,11 @@ will also work just as well for a rectangular asymmetric similarity matrix.
 The `sheatmap` function wraps all this (with additional functionality described below),
 similarly to the way `pheatmap` wraps the unordered `hclust` functionality.
 
-The code actually works on the square of the data. This works OK-ish if the similarity data is a
-correlation and one takes -1 (perfect negative correlation) to be as strong a similarity
-indicator as +1 (perfect correlation). In the likely case the data isn't like that, just make
-sure it is all non-negative, where larger values indicate "more similarity" - which we have done
-here by setting all negative correlations to zero.
-
-We can show the original data while providing a different `order_data`. It must have the same
-shape as the reordered `data`, but may contain any computed appropriate similarity values
-(typically, only non-negative values). The order data will be used to only compute the best
-order, and then this order will be applied to the actually presented data (which may contain
-arbitrary, including negative, values). In particular, any clustering will still be applied to
-the full data.
+The similarity data used for reordering must contain non-negative values. Here we are showing
+correlation data, which can be negative. To overcome this we have chosen to set all negative
+correlation to zero, and we use the `order_data` which allows displaying the original (possibly
+negative) data while ordering by another (non-negative) data. Clustering is always done on the
+original data.
 
 ## Reordered Clustering
 
