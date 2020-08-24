@@ -96,32 +96,36 @@ sheatmap(meristems, order_data=similarity, show_rownames=F, show_colnames=F, clu
 
 *Implementation notes:*
 
-  Internally, this is implemented by the `slanted_orders` function, which repeatedly sorts the rows
-  by the index of their "center of mass" column index, and then the columns by the index of their
-  "center of mass" row index, until the system stabilizes (which is pretty fast).
+Internally, this is implemented by the `slanted_orders` function, which repeatedly sorts the
+rows by the index of their "center of mass" column index, and then the columns by the index of
+their "center of mass" row index, until the system stabilizes. This is pretty fast for small
+data (e.g. up to N=1000 batches as in here) but grows (roughly) at a rate of (N log N)^2, so it
+may take a long while when ordering several thousands of elements. That said, displaying a
+heatmap with many thousand rows and columns isn't very practical anyway.
 
-  The `sheatmap` function wraps all this (with additional functionality described below), similarly
-  to the way `pheatmap` wraps the unordered `hclust` functionality.
+This is not restricted to the square symmetric matrix one gets from computing correlations. It
+will also work just as well for a rectangular asymmetric similarity matrix.
 
-  This is not restricted to the square symmetric matrix one gets from computing correlations. It
-  will also work just as well for a rectangular asymmetric similarity matrix.
+The `sheatmap` function wraps all this (with additional functionality described below),
+similarly to the way `pheatmap` wraps the unordered `hclust` functionality.
 
-  The code actually works on the square of the data. This works OK-ish if the similarity data
-  is a correlation and one takes -1 (perfect negative correlation) to be as strong a similarity
-  indicator as +1 (perfect correlation). In the likely case the data isn't like that, just make sure
-  it is all non-negative, where larger values indicate "more similarity" - which we have done here
-  by setting all negative correlations to zero.
+The code actually works on the square of the data. This works OK-ish if the similarity data is a
+correlation and one takes -1 (perfect negative correlation) to be as strong a similarity
+indicator as +1 (perfect correlation). In the likely case the data isn't like that, just make
+sure it is all non-negative, where larger values indicate "more similarity" - which we have done
+here by setting all negative correlations to zero.
 
-  We can show the original data while providing a different `order_data`. It must have the same
-  shape as the reordered `data`, but may contain any computed appropriate similarity values
-  (typically, only non-negative values). This will be used to only compute the best order, and then
-  this order will be applied to the actually presented data (which may contain arbitrary, including
-  negative, values).
+We can show the original data while providing a different `order_data`. It must have the same
+shape as the reordered `data`, but may contain any computed appropriate similarity values
+(typically, only non-negative values). The order data will be used to only compute the best
+order, and then this order will be applied to the actually presented data (which may contain
+arbitrary, including negative, values). In particular, any clustering will still be applied to
+the full data.
+
+## Reordered Clustering
 
 What if we still want to see the cluster structure of our data? The `sheatmap` function provides two
 main options to do this, with different trade-offs.
-
-## Reordered Clustering
 
 If we have an a-priori clustering of the data, we can pass it to `sheatmap` (in the same way as we
 pass it to `pheatmap`, e.g. `cluster_rows=hclust(...)`). In this case, `sheatmap` will preserve the
@@ -142,23 +146,25 @@ it is essentially in a random order. Assuming all this, we can ask `sheatmap` to
 sheatmap(meristems, order_data=similarity, show_rownames=F, show_colnames=F, oclust_rows=F, oclust_cols=F)
 ```
 
-Better... But not a great result. We do see a hint that there's a smooth transition between two
-states, but the data is still too blocky to represent a continuous biological process.
+Better - we do see there's a transition between two states, but it is more blocky than the smooth
+transition we have seen before, which seems a better fit for the continuous biological process we
+wish to capture.
 
-Still, this approach might be the best if one wants to visualize a given clustering of similarity
-data in the "best possible" way.
+Still, in some cases the unconstrained `hclust` clustering might be superior, or we may have some
+other a-priori clustering we wish to preserve. In such cases, this approach would allow us to
+visualize this clustering in the "best possible" way.
 
 ## Ordered Clustering
 
-The default behavior for `sheatmap` is to ignore `hclust`, and instead use `oclust` to generate a
-clustering tree, which is constrained to be compatible with the "ideal" slanted order. That is, we
-can replace the simple use of `pheatmap` with the simple use of `sheatmap`:
+The default behavior for `sheatmap` is to use `oclust` instead of `hclust`, that is generate a
+clustering tree which is constrained to be compatible with the "ideal" slanted order. Thus, we can
+replace the simple use of `pheatmap` with the simple use of `sheatmap`:
 
 ```{r, fig.show='hold'}
 sheatmap(meristems, order_data=similarity, show_rownames=F, show_colnames=F)
 ```
 
-Much better! Here we not only the see the clear gradient as before, but also that it splits
+Much better - here we not only the see the clear gradient as before, but also that it splits
 naturally to a few phases (that smoothly transition from one to the next). We can highlight this by
 using the `cutree` flags:
 

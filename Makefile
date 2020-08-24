@@ -5,8 +5,9 @@ all: for-commit
 for-commit: docs build check
 
 docs:
-	rm -rf NAMESPACE man
+	rm -rf NAMESPACE man docs
 	R -e 'library(devtools); document()'
+	R -e 'pkgdown::build_site()'
 
 build:
 	rm -f ../slanter_*.tar.gz
