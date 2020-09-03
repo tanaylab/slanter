@@ -16,6 +16,6 @@ batches. Negative correlations were changed to zero to simplify the analysis.
 data(meristems)
 similarity <- meristems
 similarity[similarity < 0] = 0
-slanter::sheatmap(meristems, order_data=similarity, show_rownames=F, show_colnames=F)
+slanter::sheatmap(meristems, order_data=similarity, show_rownames=FALSE, show_colnames=FALSE)
 }
 \keyword{datasets}
