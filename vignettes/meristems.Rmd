@@ -46,7 +46,7 @@ process we want to analyze.
 So, we try:
 
 ```{r, fig.show='hold'}
-pheatmap::pheatmap(meristems, show_rownames=F, show_colnames=F)
+pheatmap::pheatmap(meristems, show_rownames=FALSE, show_colnames=FALSE)
 ```
 
 At a first glance, this seems to indicate there are two very sharply distinguished sub-groups of
@@ -60,7 +60,7 @@ we'd need to do to visualize the data. However, in our case, there is no such a-
 exactly that which we are trying to extract from the data. That is, if we try:
 
 ```{r, fig.show='hold'}
-pheatmap::pheatmap(meristems, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_cols=F)
+pheatmap::pheatmap(meristems, show_rownames=FALSE, show_colnames=FALSE, cluster_rows=FALSE, cluster_cols=FALSE)
 ```
 
 This most definitely is *not* what we want to see.
@@ -86,7 +86,7 @@ close to the diagonal as possible. This, in theory, should give us a clearer ind
 overall structure of the similarity data. Ignoring clustering for a moment, we therefore try:
 
 ```{r, fig.show='hold'}
-sheatmap(meristems, order_data=similarity, show_rownames=F, show_colnames=F, cluster_rows=F, cluster_cols=F)
+sheatmap(meristems, order_data=similarity, show_rownames=FALSE, show_colnames=FALSE, cluster_rows=FALSE, cluster_cols=FALSE)
 ```
 
 **This is exactly the same data as before.**
@@ -133,7 +133,7 @@ it is essentially in a random order. Assuming all this, we can ask `sheatmap` to
 `hclust` as `pheatmap`, and merely reorder it for improved visualization, by writing:
 
 ```{r, fig.show='hold'}
-sheatmap(meristems, order_data=similarity, show_rownames=F, show_colnames=F, oclust_rows=F, oclust_cols=F)
+sheatmap(meristems, order_data=similarity, show_rownames=FALSE, show_colnames=FALSE, oclust_rows=FALSE, oclust_cols=FALSE)
 ```
 
 Better - we do see there's a transition between two states, but it is more blocky than the smooth
@@ -151,7 +151,7 @@ clustering tree which is constrained to be compatible with the "ideal" slanted o
 replace the simple use of `pheatmap` with the simple use of `sheatmap`:
 
 ```{r, fig.show='hold'}
-sheatmap(meristems, order_data=similarity, show_rownames=F, show_colnames=F)
+sheatmap(meristems, order_data=similarity, show_rownames=FALSE, show_colnames=FALSE)
 ```
 
 Much better - here we not only the see the clear gradient as before, but also that it splits
@@ -159,7 +159,7 @@ naturally to a few phases (that smoothly transition from one to the next). We ca
 using the `cutree` flags:
 
 ```{r, fig.show='hold'}
-sheatmap(meristems, order_data=similarity, show_rownames=F, show_colnames=F, cutree_rows=5, cutree_cols=5)
+sheatmap(meristems, order_data=similarity, show_rownames=FALSE, show_colnames=FALSE, cutree_rows=5, cutree_cols=5)
 ```
 
 *Implementation notes:*
