@@ -4,8 +4,14 @@
 \alias{slanted_reorder}
 \title{Reorder data rows and columns to move high values close to the diagonal.}
 \usage{
-slanted_reorder(data, order_data = NULL, order_rows = TRUE,
-  order_cols = TRUE, squared_order = TRUE, same_order = FALSE)
+slanted_reorder(
+  data,
+  order_data = NULL,
+  order_rows = TRUE,
+  order_cols = TRUE,
+  squared_order = TRUE,
+  same_order = FALSE
+)
 }
 \arguments{
 \item{data}{A rectangular matrix to reorder, of non-negative values (unless \code{order_data} is specified).}

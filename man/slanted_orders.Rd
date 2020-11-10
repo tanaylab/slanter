@@ -4,8 +4,14 @@
 \alias{slanted_orders}
 \title{Compute rows and columns orders which move high values close to the diagonal.}
 \usage{
-slanted_orders(data, order_rows = TRUE, order_cols = TRUE,
-  squared_order = TRUE, same_order = FALSE, max_spin_count = 10)
+slanted_orders(
+  data,
+  order_rows = TRUE,
+  order_cols = TRUE,
+  squared_order = TRUE,
+  same_order = FALSE,
+  max_spin_count = 10
+)
 }
 \arguments{
 \item{data}{A rectangular matrix containing non-negative values.}

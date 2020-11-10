@@ -7,7 +7,7 @@ Authors@R: c(
         person("Oren", "Ben-Kiki", email="oren@ben-kiki.org", role=c("aut", "cre")),
         person("Weizmann Institute of Science", role="cph")
     )
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
 Encoding: UTF-8
 License: MIT + file LICENSE
 Imports: Matrix, pheatmap, pracma, stats

@@ -28,6 +28,7 @@ If an \code{order} is specified, assumes that the data will be re-ordered by thi
 the indices in the returned \code{hclust} object will refer to the post-reorder data locations,
 **not** to the current data locations.
 
+
 This can be applied to the results of \code{slanted_reorder}, to give a "plausible"
 clustering for the data.
 }

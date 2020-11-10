@@ -4,13 +4,25 @@
 \alias{sheatmap}
 \title{Plot a heatmap with values as close to the diagonal as possible.}
 \usage{
-sheatmap(data, ..., order_data = NULL, annotation_col = NULL,
-  annotation_row = NULL, order_rows = TRUE, order_cols = TRUE,
-  squared_order = TRUE, same_order = FALSE, cluster_rows = TRUE,
-  cluster_cols = TRUE, oclust_rows = TRUE, oclust_cols = TRUE,
+sheatmap(
+  data,
+  ...,
+  order_data = NULL,
+  annotation_col = NULL,
+  annotation_row = NULL,
+  order_rows = TRUE,
+  order_cols = TRUE,
+  squared_order = TRUE,
+  same_order = FALSE,
+  cluster_rows = TRUE,
+  cluster_cols = TRUE,
+  oclust_rows = TRUE,
+  oclust_cols = TRUE,
   clustering_distance_rows = "euclidian",
   clustering_distance_cols = "euclidian",
-  clustering_method = "ward.D2", clustering_callback = NA)
+  clustering_method = "ward.D2",
+  clustering_callback = NA
+)
 }
 \arguments{
 \item{data}{A rectangular matrix to plot, of non-negative values (unless \code{order_data} is specified).}
@@ -83,6 +95,7 @@ There are four options for controlling clustering:
 
 * Specify an explicit clustering (e.g., \code{cluster_rows=hclust(...)}). In this case,
   \code{sheatmap} will again merely reorder the tree but will not modify it.
+
 
 In addition, you can give this function any of the \code{pheatmap} flags, and it will just pass
 them on. This allows full control over the diagram's features.

@@ -1,0 +1,9 @@
+0.1
+ - Initial Release
+
+0.2
+ - Fix a bug when computing column reordering distances
+ - Report the best discovered order, even if final spinning degrades it
+ - Remove the use of a normalization epsilon for more stable results
+ - Provide a discount_outliers parameter to control whether or not run the 2nd ordering phase
+ - Link to the rdocumentation web site in the README file
