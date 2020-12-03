@@ -1,6 +1,6 @@
 Package: slanter
-Version: 0.1-0
-Date: 2020-08-13
+Version: 0.2-0
+Date: 2020-11-08
 Title: Slanted Matrices and Ordered Clustering
 Description: Slanted matrices and ordered clustering for better visualization of similarity data.
 Authors@R: c(

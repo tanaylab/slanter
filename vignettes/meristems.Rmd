@@ -93,24 +93,24 @@ sheatmap(meristems, order_data=similarity, show_rownames=FALSE, show_colnames=FA
 
 *Implementation notes:*
 
-Internally, this is implemented by the `slanted_orders` function, which repeatedly sorts the
-rows by the index of their "center of mass" column index, and then the columns by the index of
-their "center of mass" row index, until the system stabilizes. This is pretty fast for small
-data (e.g. up to N=1000 batches as in here) but grows (roughly) at a rate of (N log N)^2, so it
-may take a long while when ordering several thousands of elements. That said, displaying a
-heatmap with many thousand rows and columns isn't very practical anyway.
+Internally, this is implemented by the `slanted_orders` function, which repeatedly sorts the rows by
+the index of their "center of mass" column, and then the columns by the index of their "center of
+mass" row, until the system stabilizes. This is pretty fast for small data (e.g. up to N=1000
+batches as in here) but grows (roughly) at a rate of (N log N)^2, so it may take a long while when
+ordering several thousands of elements. That said, displaying a heatmap with many thousand rows and
+columns isn't very practical anyway.
 
 This is not restricted to the square symmetric matrix one gets from computing correlations. It
-will also work just as well for a rectangular asymmetric similarity matrix.
+will also work just as well for a rectangular or an asymmetric similarity matrix.
 
 The `sheatmap` function wraps all this (with additional functionality described below),
 similarly to the way `pheatmap` wraps the unordered `hclust` functionality.
 
-The similarity data used for reordering must contain non-negative values. Here we are showing
+The similarity data used for reordering must contain only non-negative values. Here we are showing
 correlation data, which can be negative. To overcome this we have chosen to set all negative
 correlation to zero, and we use the `order_data` which allows displaying the original (possibly
-negative) data while ordering by another (non-negative) data. Clustering is always done on the
-original data.
+negative) data while ordering by another (non-negative) data. Clustering (described below) is always
+done on the original data.
 
 ## Reordered Clustering
 

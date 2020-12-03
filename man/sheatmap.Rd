@@ -14,6 +14,7 @@ sheatmap(
   order_cols = TRUE,
   squared_order = TRUE,
   same_order = FALSE,
+  discount_outliers = TRUE,
   cluster_rows = TRUE,
   cluster_cols = TRUE,
   oclust_rows = TRUE,
@@ -42,6 +43,8 @@ sheatmap(
 \item{squared_order}{Whether to reorder to minimize the l2 norm (otherwise minimizes the l1 norm).}
 
 \item{same_order}{Whether to apply the same order to both rows and columns (if reordering both).}
+
+\item{discount_outliers}{Whether to do a final order phase discounting outlier values far from the diagonal.}
 
 \item{cluster_rows}{Whether to cluster the rows, or the clustering to use.}
 

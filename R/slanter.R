@@ -11,6 +11,7 @@
 #' @param order_cols Whether to reorder the columns.
 #' @param squared_order Whether to reorder to minimize the l2 norm (otherwise minimizes the l1 norm).
 #' @param same_order Whether to apply the same order to both rows and columns.
+#' @param discount_outliers Whether to do a final order phase discounting outlier values far from the diagonal.
 #' @param max_spin_count How many times to retry improving the solution before giving up.
 #' @return A list with two keys, \code{rows} and \code{cols}, which contain the order.
 #'
@@ -19,20 +20,24 @@
 #' @examples
 #' slanter::slanted_orders(cor(t(mtcars)))
 slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
-                           squared_order=TRUE, same_order=FALSE, max_spin_count=10) {
+                           squared_order=TRUE, same_order=FALSE,
+                           discount_outliers=TRUE,
+                           max_spin_count=10) {
 
     rows_count <- dim(data)[1]
     cols_count <- dim(data)[2]
 
-    rows_indices <- as.vector(1:rows_count)
-    cols_indices <- as.vector(1:cols_count)
+    row_indices <- as.vector(1:rows_count)
+    col_indices <- as.vector(1:cols_count)
 
-    rows_permutation <- rows_indices
-    cols_permutation <- cols_indices
+    best_rows_permutation <- row_indices
+    best_cols_permutation <- col_indices
+
+    stopifnot(!same_order || (order_rows && order_cols))
 
     if (same_order) {
         stopifnot(rows_count == cols_count)
-        permutation <- rows_indices
+        permutation <- row_indices
     }
 
     if (order_rows || order_cols) {
@@ -40,9 +45,10 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
         if (squared_order) {
             data <- data * data
         }
-        epsilon <- min(data[data > 0]) / 10
 
         reorder_phase <- function() {
+            rows_permutation <- best_rows_permutation
+            cols_permutation <- best_cols_permutation
             spinning_rows_count <- 0
             spinning_cols_count <- 0
             spinning_same_count <- 0
@@ -54,87 +60,96 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
                 was_changed <- FALSE
                 ideal_index <- NULL
                 if (order_rows) {
-                    sum_indexed_rows <- rowSums(sweep(data, 2, cols_indices, `*`))
+                    sum_indexed_rows <- rowSums(sweep(data, 2, col_indices, `*`))
                     sum_squared_rows <- rowSums(data)
-                    ideal_row_index <- (sum_indexed_rows + epsilon) / (sum_squared_rows + epsilon)
+                    sum_squared_rows[sum_squared_rows <= 0] = 1
+                    ideal_row_index <- sum_indexed_rows / sum_squared_rows
 
                     if (same_order) {
                         ideal_index <- ideal_row_index
                     } else {
-                        error <- ideal_row_index - rows_indices
-                        new_error_rows <- sum(error * error)
+                        ideal_row_index <- ideal_row_index * (rows_count / cols_count)
                         new_rows_permutation <- order(ideal_row_index)
-                        new_changed <- any(new_rows_permutation != rows_indices)
+                        error <- new_rows_permutation - ideal_row_index
+                        new_error_rows <- sum(error * error)
+                        new_changed <- any(new_rows_permutation != row_indices)
                         if (is.null(error_rows) || new_error_rows < error_rows) {
                             error_rows <- new_error_rows
                             spinning_rows_count <- 0
+                            best_rows_permutation <<- rows_permutation[new_rows_permutation]
                         } else {
                             spinning_rows_count <- spinning_rows_count + 1
                         }
                         if (new_changed && spinning_rows_count < max_spin_count) {
                             was_changed <- TRUE
-                            data <<- data[new_rows_permutation,]
-                            rows_permutation <<- rows_permutation[new_rows_permutation]
+                            data <- data[new_rows_permutation,]
+                            rows_permutation <- rows_permutation[new_rows_permutation]
                         }
                     }
                 }
 
                 if (order_cols) {
-                    sum_indexed_cols <- colSums(sweep(data, 1, rows_indices, `*`))
+                    sum_indexed_cols <- colSums(sweep(data, 1, row_indices, `*`))
                     sum_squared_cols <- colSums(data)
-                    ideal_col_index <- (sum_indexed_cols + epsilon) / (sum_squared_cols + epsilon)
+                    sum_squared_cols[sum_squared_cols <= 0] = 1
+                    ideal_col_index <- sum_indexed_cols / sum_squared_cols
 
                     if (same_order) {
-                        if (!is.null(ideal_index)) {
-                            ideal_index <- (ideal_index + ideal_col_index) / 2
-                        } else {
-                            ideal_index <- ideal_col_index
-                        }
+                        ideal_index <- (ideal_index + ideal_col_index) / 2
                     } else {
-                        error <- ideal_col_index - cols_indices
-                        new_error_cols <- sum(error * error)
+                        ideal_col_index <- ideal_col_index * (cols_count / rows_count)
                         new_cols_permutation <- order(ideal_col_index)
-                        new_changed <- any(new_cols_permutation != cols_indices)
+                        error <- new_cols_permutation - ideal_col_index
+                        new_error_cols <- sum(error * error)
+                        new_changed <- any(new_cols_permutation != col_indices)
                         if (is.null(error_cols) || new_error_cols < error_cols) {
                             error_cols <- new_error_cols
                             spinning_cols_count <- 0
+                            best_cols_permutation <<- cols_permutation[new_cols_permutation]
                         } else {
                             spinning_cols_count <- spinning_cols_count + 1
                         }
                         if (new_changed && spinning_cols_count < max_spin_count) {
                             was_changed <- TRUE
-                            data <<- data[,new_cols_permutation]
-                            cols_permutation <<- cols_permutation[new_cols_permutation]
+                            data <- data[,new_cols_permutation]
+                            cols_permutation <- cols_permutation[new_cols_permutation]
                         }
                     }
                 }
 
                 if (!is.null(ideal_index)) {
-                    error <- ideal_index - rows_indices
-                    new_error_same <- sum(error * error)
                     new_permutation <- order(ideal_index)
-                    new_changed <- any(new_permutation != rows_indices)
+                    error <- new_permutation - ideal_index
+                    new_error_same <- sum(error * error)
+                    new_changed <- any(new_permutation != row_indices)
                     if (is.null(error_same) || new_error_same < error_same) {
                         error_same <- new_error_same
                         spinning_same_count <- 0
+                        best_permutation <- permutation[new_permutation]
+                        best_rows_permutation <<- best_permutation
+                        best_cols_permutation <<- best_permutation
                     } else {
                         spinning_same_count <- spinning_same_count + 1
                     }
                     if (new_changed && spinning_same_count < max_spin_count) {
                         was_changed <- TRUE
-                        data <<- data[new_permutation,new_permutation]
-                        permutation <<- permutation[new_permutation]
-                        rows_permutation <<- permutation
-                        cols_permutation <<- permutation
+                        data <- data[new_permutation,new_permutation]
+                        permutation <- permutation[new_permutation]
+                        rows_permutation <- permutation
+                        cols_permutation <- permutation
                     }
                 }
             }
         }
 
-        discount_outliers <- function() {
-            row_indices_matrix <- matrix(rep(rows_indices, each=cols_count),
+        reorder_phase()
+
+        if (discount_outliers) {
+            data <- data[best_rows_permutation,best_cols_permutation]
+
+            row_indices_matrix <- matrix(rep(row_indices, each=cols_count),
                                          nrow=rows_count, ncol=cols_count, byrow=TRUE)
-            col_indices_matrix <- matrix(rep(cols_indices, each=rows_count),
+            col_indices_matrix <- matrix(rep(col_indices, each=rows_count),
                                          nrow=rows_count, ncol=cols_count, byrow=FALSE)
 
             rows_per_col <- rows_count / cols_count
@@ -147,15 +162,13 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
             col_distance_matrix <- col_indices_matrix - ideal_col_indices_matrix
 
             weight_matrix <- (1 + abs(row_distance_matrix)) * (1 + abs(col_distance_matrix))
-            data <<- data / weight_matrix
-        }
+            data <- data / weight_matrix
 
-        reorder_phase()
-        discount_outliers()
-        reorder_phase()
+            reorder_phase()
+        }
     }
 
-    return (list(rows=rows_permutation, cols=cols_permutation))
+    return (list(rows=best_rows_permutation, cols=best_cols_permutation))
 }
 
 #' Reorder data rows and columns to move high values close to the diagonal.
@@ -171,6 +184,7 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
 #' @param order_cols Whether to reorder the columns.
 #' @param squared_order Whether to reorder to minimize the l2 norm (otherwise minimizes the l1 norm).
 #' @param same_order Whether to apply the same order to both rows and columns.
+#' @param discount_outliers Whether to do a final order phase discounting outlier values far from the diagonal.
 #' @return A matrix of the same shape whose rows and columns are a permutation of the input.
 #'
 #' @export
@@ -178,15 +192,16 @@ slanted_orders <- function(data, order_rows=TRUE, order_cols=TRUE,
 #' @examples
 #' slanter::slanted_reorder(cor(t(mtcars)))
 slanted_reorder <- function(data, order_data=NULL, order_rows=TRUE, order_cols=TRUE,
-                            squared_order=TRUE, same_order=FALSE) {
+                            squared_order=TRUE, same_order=FALSE, discount_outliers=TRUE) {
     if (is.null(order_data)) {
         order_data <- data
     }
     stopifnot(all(dim(order_data) == dim(data)))
 
     orders <- slanted_orders(order_data,
+                             order_rows=order_rows, order_cols=order_cols,
                              squared_order=squared_order, same_order=same_order,
-                             order_rows=order_rows, order_cols=order_cols)
+                             discount_outliers=discount_outliers)
 
     return (data[orders$rows, orders$cols])
 }
@@ -237,6 +252,7 @@ slanted_reorder <- function(data, order_data=NULL, order_rows=TRUE, order_cols=T
 #' @param order_cols Whether to reorder the columns. Otherwise, use the current order.
 #' @param squared_order Whether to reorder to minimize the l2 norm (otherwise minimizes the l1 norm).
 #' @param same_order Whether to apply the same order to both rows and columns (if reordering both).
+#' @param discount_outliers Whether to do a final order phase discounting outlier values far from the diagonal.
 #' @param cluster_rows Whether to cluster the rows, or the clustering to use.
 #' @param cluster_cols Whether to cluster the columns, or the clustering to use.
 #' @param oclust_cols Whether to use \code{oclust} instead of \code{hclust} for the columns (if
@@ -267,6 +283,7 @@ sheatmap <- function(data, ...,
                      order_cols=TRUE,
                      squared_order=TRUE,
                      same_order=FALSE,
+                     discount_outliers=TRUE,
                      cluster_rows=TRUE,
                      cluster_cols=TRUE,
                      oclust_rows=TRUE,
@@ -285,7 +302,8 @@ sheatmap <- function(data, ...,
 
     ideal_orders <-
         slanted_orders(order_data, order_rows=order_rows, order_cols=order_cols,
-                       same_order=same_order)
+                       squared_order=squared_order, same_order=same_order,
+                       discount_outliers=discount_outliers)
 
     rows_order <- NULL
 
@@ -312,7 +330,7 @@ sheatmap <- function(data, ...,
     cols_order <- NULL
 
     if (class(cluster_cols) == 'logical' && cluster_cols) {
-        cols_distances <- stats::dist(data, method=clustering_distance_cols)
+        cols_distances <- stats::dist(t(data), method=clustering_distance_cols)
         if (oclust_cols) {
             cols_order <- ideal_orders$col
             cluster_cols <- oclust(cols_distances, order=cols_order, method=clustering_method)
@@ -501,6 +519,7 @@ oclust <- function(distances, method='ward.D2', order=NULL, members=NULL) {
     }
 
     if (!is.null(order)) {
+        stopifnot(length(order) == entities_count)
         distances <- distances[order, order]
     }
 
