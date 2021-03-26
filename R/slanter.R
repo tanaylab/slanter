@@ -252,6 +252,12 @@ slanted_reorder <- function(data, order_data=NULL, order_rows=TRUE, order_cols=T
 #' @param order_cols Whether to reorder the columns. Otherwise, use the current order.
 #' @param squared_order Whether to reorder to minimize the l2 norm (otherwise minimizes the l1 norm).
 #' @param same_order Whether to apply the same order to both rows and columns (if reordering both).
+#'        For a square matrix, may also contain 'row' or 'column' to force the order of one axis to
+#'        apply to both.
+#' @param patch_cols_order Optional function that may be applied to the columns order, returning a
+#'        better order.
+#' @param patch_rows_order Optional function that may be applied to the rows order, returning a
+#'        better order.
 #' @param discount_outliers Whether to do a final order phase discounting outlier values far from the diagonal.
 #' @param cluster_rows Whether to cluster the rows, or the clustering to use.
 #' @param cluster_cols Whether to cluster the columns, or the clustering to use.
@@ -283,6 +289,8 @@ sheatmap <- function(data, ...,
                      order_cols=TRUE,
                      squared_order=TRUE,
                      same_order=FALSE,
+                     patch_cols_order=NULL,
+                     patch_rows_order=NULL,
                      discount_outliers=TRUE,
                      cluster_rows=TRUE,
                      cluster_cols=TRUE,
@@ -292,6 +300,7 @@ sheatmap <- function(data, ...,
                      clustering_distance_cols='euclidian',
                      clustering_method='ward.D2',
                      clustering_callback=NA) {
+    print('TODOX')
     stopifnot(is.na(clustering_callback))  # Not implemented.
     stopifnot(clustering_method %in% c('ward.D', 'ward.D2'))
 
@@ -300,10 +309,32 @@ sheatmap <- function(data, ...,
     }
     stopifnot(all(dim(order_data) == dim(data)))
 
+    if (class(same_order) != 'logical') {
+        stopifnot(same_order %in% c('row', 'column'))
+        stopifnot(dim(data)[1] == dim(data)[2])
+    }
+
+    compute_same_order <- class(same_order) == 'logical' && same_order
+
     ideal_orders <-
         slanted_orders(order_data, order_rows=order_rows, order_cols=order_cols,
-                       squared_order=squared_order, same_order=same_order,
+                       squared_order=squared_order, same_order=compute_same_order,
                        discount_outliers=discount_outliers)
+
+    if (same_order == 'col') {
+        ideal_orders$row <- ideal_orders$col
+    }
+    if (same_order == 'row') {
+        ideal_orders$col <- ideal_orders$row
+    }
+
+    if (!is.null(patch_cols_order)) {
+        ideal_orders$col <- patch_cols_order(ideal_orders$col)
+    }
+
+    if (!is.null(patch_rows_order)) {
+        ideal_orders$row <- patch_rows_order(ideal_orders$row)
+    }
 
     rows_order <- NULL
 
