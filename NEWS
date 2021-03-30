@@ -7,3 +7,5 @@
  - Remove the use of a normalization epsilon for more stable results
  - Provide a discount_outliers parameter to control whether or not run the 2nd ordering phase
  - Link to the rdocumentation web site in the README file
+ - Add more options to the same_order flag
+ - Add optional patch_cols_order and patch_rows_order flags

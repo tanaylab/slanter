@@ -217,8 +217,14 @@ slanted_reorder <- function(data, order_data=NULL, order_rows=TRUE, order_cols=T
 #'
 #' By default, the rows and columns are ordered independently from each other. If the matrix is
 #' asymmetric but square (e.g., a matrix of weights of a directed graph such as a
-#' K-nearest-neighbors graph), then you can can specify \code{same_order=TRUE} to force both rows and
-#' columns to the same order.
+#' K-nearest-neighbors graph), then you can can specify \code{same_order=TRUE} to force both rows
+#' and columns to the same order. You can also specify \code{same_order='row'} to force the columns
+#' to use the same order as the rows, or \code{same_order='column'} to force the rows to use the
+#' same order as the columns.
+#'
+#' You can also specify a \code{patch_cols_order} and/or a `\code{patch_rows_order}` function that
+#' takes the computed "ideal" order and returns a patched order. For example, this can be used to
+#' force special values (such as "outliers") to the side of the heatmap.
 #'
 #' There are four options for controlling clustering:
 #'
@@ -300,7 +306,6 @@ sheatmap <- function(data, ...,
                      clustering_distance_cols='euclidian',
                      clustering_method='ward.D2',
                      clustering_callback=NA) {
-    print('TODOX')
     stopifnot(is.na(clustering_callback))  # Not implemented.
     stopifnot(clustering_method %in% c('ward.D', 'ward.D2'))
 

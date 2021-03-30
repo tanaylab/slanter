@@ -14,6 +14,8 @@ sheatmap(
   order_cols = TRUE,
   squared_order = TRUE,
   same_order = FALSE,
+  patch_cols_order = NULL,
+  patch_rows_order = NULL,
   discount_outliers = TRUE,
   cluster_rows = TRUE,
   cluster_cols = TRUE,
@@ -42,7 +44,15 @@ sheatmap(
 
 \item{squared_order}{Whether to reorder to minimize the l2 norm (otherwise minimizes the l1 norm).}
 
-\item{same_order}{Whether to apply the same order to both rows and columns (if reordering both).}
+\item{same_order}{Whether to apply the same order to both rows and columns (if reordering both).
+For a square matrix, may also contain 'row' or 'column' to force the order of one axis to
+apply to both.}
+
+\item{patch_cols_order}{Optional function that may be applied to the columns order, returning a
+better order.}
+
+\item{patch_rows_order}{Optional function that may be applied to the rows order, returning a
+better order.}
 
 \item{discount_outliers}{Whether to do a final order phase discounting outlier values far from the diagonal.}
 
@@ -81,8 +91,14 @@ both by specifying \code{order_rows=FALSE} and/or \code{order_cols=FALSE}. Other
 
 By default, the rows and columns are ordered independently from each other. If the matrix is
 asymmetric but square (e.g., a matrix of weights of a directed graph such as a
-K-nearest-neighbors graph), then you can can specify \code{same_order=TRUE} to force both rows and
-columns to the same order.
+K-nearest-neighbors graph), then you can can specify \code{same_order=TRUE} to force both rows
+and columns to the same order. You can also specify \code{same_order='row'} to force the columns
+to use the same order as the rows, or \code{same_order='column'} to force the rows to use the
+same order as the columns.
+
+You can also specify a \code{patch_cols_order} and/or a `\code{patch_rows_order}` function that
+takes the computed "ideal" order and returns a patched order. For example, this can be used to
+force special values (such as "outliers") to the side of the heatmap.
 
 There are four options for controlling clustering:
 
